@@ -5,6 +5,9 @@
 //#include "task1e.h"
 //#include "task1f.h"
 #include "task1g.h"
+//#include "task1h.h"
+//#include "task1i.h"
+
 
 int main()
 {
@@ -28,7 +31,16 @@ int main()
 //    task1f.doTask();
 
     Task1G task1g;
-    task1g.doTask();
+//    task1g.doTask();
+    task1g.test();
+
+//    Task1H task1h;
+//    task1h.doTask();
+//    task1h.test();
+
+//    Task1I task1i;
+//    task1i.test();
+//    task1i.doTask();
 
     return 0;
 }
