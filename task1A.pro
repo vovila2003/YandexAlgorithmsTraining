@@ -13,7 +13,8 @@ SOURCES += \
         task1f.cpp \
         task1g.cpp \
         task1h.cpp \
-        task1i.cpp
+        task1i.cpp \
+        task1j.cpp
 
 HEADERS += \
     task1a.h \
@@ -24,4 +25,5 @@ HEADERS += \
     task1f.h \
     task1g.h \
     task1h.h \
-    task1i.h
+    task1i.h \
+    task1j.h

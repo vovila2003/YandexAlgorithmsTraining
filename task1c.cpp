@@ -1,5 +1,7 @@
 #include "task1c.h"
 
+#include <iostream>
+
 using namespace std;
 
 Task1C::Task1C()

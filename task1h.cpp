@@ -1,4 +1,5 @@
 #include "task1h.h"
+#include <iostream>
 #include <set>
 
 using namespace std;

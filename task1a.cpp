@@ -1,5 +1,8 @@
 #include "task1a.h"
 
+#include <math.h>
+#include <iostream>
+
 using namespace std;
 
 Task1A::Task1A()

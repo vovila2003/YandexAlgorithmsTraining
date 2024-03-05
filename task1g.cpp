@@ -1,5 +1,4 @@
 #include "task1g.h"
-#include <cmath>
 #include <memory>
 #include <iostream>
 #include <queue>
@@ -15,8 +14,6 @@ struct Node {
     int round;
     bool done;
 };
-
-int minRound;
 
 Task1G::Task1G()
 {
@@ -49,7 +46,7 @@ void Task1G::test()
 
 int Task1G::calculate(int x, int y, int p)
 {
-    minRound = std::numeric_limits<int>::max();
+    minRound_ = std::numeric_limits<int>::max();
     auto rootNode = make_shared<Node>();
     rootNode->x = x;
     rootNode->y = y;
@@ -59,10 +56,10 @@ int Task1G::calculate(int x, int y, int p)
 
     process(rootNode, p);
 
-    if (minRound == std::numeric_limits<int>::max()) {
+    if (minRound_ == std::numeric_limits<int>::max()) {
         return -1;
     }
-    return minRound;
+    return minRound_;
 }
 
 shared_ptr<Node> Task1G::processSoldiersAttack(Node* parent, int p)
@@ -71,7 +68,7 @@ shared_ptr<Node> Task1G::processSoldiersAttack(Node* parent, int p)
     result->parent = parent;
     result->done = false;
 
-    if (parent->round >= minRound) {
+    if (parent->round >= minRound_) {
         result->done = true;
         return result;
     }
@@ -97,8 +94,8 @@ shared_ptr<Node> Task1G::processSoldiersAttack(Node* parent, int p)
 
     if (y <= 0 && soldiers <= 0) {
         result->done = true;
-        if (minRound > round) {
-            minRound = round;
+        if (minRound_ > round) {
+            minRound_ = round;
         }
     }
 
@@ -114,7 +111,7 @@ std::shared_ptr<Node> Task1G::processBarrackAttack(Node *parent, int p)
     result->parent = parent;
     result->done = false;
 
-    if (parent->round >= minRound) {
+    if (parent->round >= minRound_) {
         result->done = true;
         return result;
     }
@@ -140,8 +137,8 @@ std::shared_ptr<Node> Task1G::processBarrackAttack(Node *parent, int p)
 
     if (y <= 0 && soldiers <= 0) {
         result->done = true;
-        if (minRound > round) {
-            minRound = round;
+        if (minRound_ > round) {
+            minRound_ = round;
         }
     }
 

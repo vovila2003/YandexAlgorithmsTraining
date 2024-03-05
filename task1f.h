@@ -1,8 +1,7 @@
 #ifndef TASK1F_H
 #define TASK1F_H
 
-#include <algorithm>
-#include <iostream>
+#include <cstdint>
 #include <vector>
 
 class Task1F

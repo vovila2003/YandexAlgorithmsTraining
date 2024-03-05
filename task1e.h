@@ -1,7 +1,7 @@
 #ifndef TASK1E_H
 #define TASK1E_H
 
-#include <iostream>
+#include <cstdint>
 
 class Task1E
 {

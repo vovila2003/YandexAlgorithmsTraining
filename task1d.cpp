@@ -1,5 +1,8 @@
 #include "task1d.h"
 
+#include <iostream>
+#include <sstream>
+
 using namespace std;
 
 Task1D::Task1D()

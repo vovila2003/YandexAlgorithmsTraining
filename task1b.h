@@ -1,8 +1,6 @@
 #ifndef TASK1B_H
 #define TASK1B_H
 
-#include <iostream>
-
 class Task1B
 {
 public:

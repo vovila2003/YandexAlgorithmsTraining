@@ -1,8 +1,8 @@
 #ifndef TASK1I_H
 #define TASK1I_H
 
+#include <ctime>
 #include <map>
-#include <string>
 #include <vector>
 
 class Task1I

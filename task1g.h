@@ -12,6 +12,8 @@ public:
     void doTask();
     void test();
 private:
+    int minRound_;
+private:
     int calculate(int x, int y, int p);
     std::shared_ptr<Node> processSoldiersAttack(Node* parent, int p);
     std::shared_ptr<Node> processBarrackAttack(Node* parent, int p);

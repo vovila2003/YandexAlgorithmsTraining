@@ -1,4 +1,6 @@
 #include "task1f.h"
+#include <algorithm>
+#include <iostream>
 
 using namespace std;
 

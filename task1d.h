@@ -1,9 +1,7 @@
 #ifndef TASK1D_H
 #define TASK1D_H
 
-#include <iostream>
 #include <vector>
-#include <sstream>
 
 class Task1D
 {

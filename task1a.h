@@ -1,9 +1,6 @@
 #ifndef TASK1A_H
 #define TASK1A_H
 
-#include <math.h>
-#include <iostream>
-
 class Task1A
 {
 public:
