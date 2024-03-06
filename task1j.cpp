@@ -329,7 +329,7 @@ void processSurroundedImage(Image& image, Fragment& fragment, size_t w, size_t h
     newFragment(fragment, document);
 }
 
-size_t checkImagePosition(const Image& image, size_t x, size_t w) {
+int checkImagePosition(const Image& image, int x, size_t w) {
     if (x < 0) {
         x = 0;
     } else if (x + image.width >= w) {
@@ -338,28 +338,43 @@ size_t checkImagePosition(const Image& image, size_t x, size_t w) {
     return x;
 }
 
-void processFloatingImage(Image& image, Fragment& fragment, size_t w) {
-    size_t x = fragment.x + fragment.width;
-    size_t y = fragment.y;
+Image lastImage;
+bool lastFloatingImage;
+
+void processFloatingImage(Image& image, Fragment& fragment, size_t w, bool relativeFloatimgImage) {
+    int x, y;
+    if (relativeFloatimgImage) {
+        x = lastImage.beginX + lastImage.width;
+        y = lastImage.beginY;
+    } else {
+        x = fragment.x + fragment.width;
+        y = fragment.y;
+    }
     x += image.dx;
     y += image.dy;
     x = checkImagePosition(image, x, w);
     image.beginX = x;
     image.beginY = y;
+    lastImage = image;
 }
+
 
 void processElement(Element& element, Fragment& fragment, size_t w, size_t h, size_t c,
                     Document& document) {
     if (element.type == ElementType::Word) {
         processWord(element, fragment, w, h, c, document);
+        lastFloatingImage = false;
     } else if (element.type == ElementType::Image) {
         Image& image = element.image;
         if (image.layout == ImageType::Embedded) {
             processEmbeddedImage(image, fragment, w, h, c, document);
+            lastFloatingImage = false;
         } else if (image.layout == ImageType::Surrounded) {
             processSurroundedImage(image, fragment, w, h, document);
+            lastFloatingImage = false;
         } else if (image.layout == ImageType::Floating) {
-            processFloatingImage(image, fragment, w);
+            processFloatingImage(image, fragment, w, lastFloatingImage);
+            lastFloatingImage = true;
         }
     }
 }
