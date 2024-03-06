@@ -27,3 +27,6 @@ HEADERS += \
     task1h.h \
     task1i.h \
     task1j.h
+
+DISTFILES += \
+    tests.txt

@@ -105,7 +105,9 @@ struct Fragment {
 
     void toNewLine(size_t h) {
         x = 0;
-        y = y + h;
+        y += h;
+        width = 0;
+        empty = true;
     }
 };
 
@@ -145,6 +147,7 @@ void readDocument(Document& document, istream& inputStream) {
     string line;
     Paragraph paragraph;
     bool isImage = false;
+    getline(inputStream, line);
     while (getline(inputStream, line)) {
         if (line.find_first_not_of(' ') == string::npos || line.empty()) { // empty line -> new paragraph
             document.paragraphs.push_back(paragraph);
@@ -326,9 +329,23 @@ void processSurroundedImage(Image& image, Fragment& fragment, size_t w, size_t h
     newFragment(fragment, document);
 }
 
-void processFloatingImage(Image& image, Fragment& fragment, size_t w, size_t h, size_t c,
-                            Document& document) {
+size_t checkImagePosition(const Image& image, size_t x, size_t w) {
+    if (x < 0) {
+        x = 0;
+    } else if (x + image.width >= w) {
+        x = w - image.width;
+    }
+    return x;
+}
 
+void processFloatingImage(Image& image, Fragment& fragment, size_t w) {
+    size_t x = fragment.x + fragment.width;
+    size_t y = fragment.y;
+    x += image.dx;
+    y += image.dy;
+    x = checkImagePosition(image, x, w);
+    image.beginX = x;
+    image.beginY = y;
 }
 
 void processElement(Element& element, Fragment& fragment, size_t w, size_t h, size_t c,
@@ -342,7 +359,7 @@ void processElement(Element& element, Fragment& fragment, size_t w, size_t h, si
         } else if (image.layout == ImageType::Surrounded) {
             processSurroundedImage(image, fragment, w, h, document);
         } else if (image.layout == ImageType::Floating) {
-            processFloatingImage(image, fragment, w, h, c, document);
+            processFloatingImage(image, fragment, w);
         }
     }
 }
@@ -361,17 +378,20 @@ void processFragments(Document& document) {
         }
         document.fragments.push_back(fragment);
         fragment.toNewLine(h);
-        document.fragments.push_back(fragment);
     }
 }
 
 void printResult(const Document& document, ostream& output) {
+    bool first = true;
     for (size_t i = 0; i < document.paragraphs.size(); ++i) {
         for (size_t j = 0; j < document.paragraphs.at(i).elements.size(); ++j) {
             const Element& element = document.paragraphs.at(i).elements.at(j);
             if (element.type != ElementType::Image) continue;
-
-            output << element.image.beginX << " " << element.image.beginY << endl;
+            if (!first) {
+                output << endl;
+            }
+            output << element.image.beginX << " " << element.image.beginY;
+            first = false;
         }
     }
 }
@@ -392,7 +412,7 @@ void Task1J::test()
         "start (image layout=embedded width=12 height=5)\n"
         "(image layout=surrounded width=25 height=58)\n"
         "and word is \n"
-        // "(image layout=floating dx=18 dy=-15 width=25 height=20)\n"
+        "(image layout=floating dx=18 dy=-15 width=25 height=20)\n"
         "here new \n"
         "(image layout=embedded width=20 height=22)\n"
         "another\n"
@@ -401,7 +421,7 @@ void Task1J::test()
         "\n"
         "new paragraph\n"
         "(image layout=surrounded width=5 height=30)\n"
-        // "(image layout=floating width=20 height=35 dx=50 dy=-16)"
+        "(image layout=floating width=20 height=35 dx=50 dy=-16)"
         );
 
     // string input(
@@ -412,8 +432,12 @@ void Task1J::test()
     //     "\n"
     //     "ten\n"
     //     );
+    // string input(
+    //     "(image dx=10 dy=11 height=100 width=20 layout=floating)"
+    //     );
     stringstream stream(input);
     Document document(120, 10, 8);
+    // Document document(100, 2, 3);
     readDocument(document, stream);
     processFragments(document);
     printResult(document, cout);

@@ -1,0 +1,155 @@
+120 10 8
+start (image layout=embedded width=12 height=5)
+(image layout=surrounded width=25 height=58)
+and word is
+(image layout=floating dx=18 dy=-15 width=25 height=20)
+here new
+(image layout=embedded width=20 height=22)
+another
+(image layout=embedded width=40 height=19)
+longword
+
+new paragraph
+(image layout=surrounded width=5 height=30)
+(image layout=floating width=20 height=35 dx=50 dy=-16)
+
+48 0
+60 0
+74 -5
+32 20
+0 52
+104 81
+100 65
+
+
+
+--------------------------------
+
+
+
+100 3 9
+(image height=40 layout=embedded width=5)
+(image
+layout=embedded
+width=4
+height=12) diY
+(image
+width=10 layout=embedded
+height=99)
+JKH (image height=70
+layout=floating dy=5 width=9 dx=-6) (image layout=floating width=8
+height=83
+dy=8
+dx=-7) (image dx=9 dy=-2
+layout=floating height=35
+width=10) oxr.y (image layout=embedded height=55 width=2)
+if
+pds
+(image layout=embedded height=1
+width=7) (image height=54 layout=embedded width=10) (image width=6
+height=78 layout=embedded)
+(image
+layout=embedded height=77
+width=10) (image
+layout=embedded
+width=1 height=40)
+(image
+layout=embedded width=5
+height=7)
+AM'6B
+R!yi0bGVm1j Z (image height=88
+dy=2
+dx=-2
+layout=floating
+width=4)
+(image layout=surrounded
+width=2
+height=91) (image width=8
+height=19 dx=8 dy=0
+layout=floating) (image layout=surrounded width=7 height=30) (image layout=floating
+width=8
+height=67
+dx=-9
+dy=3)
+8L
+(image layout=floating
+dy=-3 height=87
+dx=7 width=7)
+
+
+0 0
+14 0
+63 0
+21 104
+23 112
+40 110
+90 99
+63 154
+79 154
+0 208
+15 208
+34 208
+44 208
+7 294
+9 292
+19 292
+11 292
+9 295
+43 289
+
+
+
+---------------------------
+
+
+20 2 1
+(image layout=surrounded width=1 height=8) 0123 (image layout=surrounded width=1 height=5) 123 (image layout=surrounded width=1 height=100) 1234 (image layout=surrounded width=2 height=6)
+321 (image layout=surrounded width=1 height=3) (image layout=embedded width=4 height=1)
+ab
+(image layout=embedded width=1 height=3) (image layout=embedded width=3 height=1)
+(image layout=embedded width=5 height=1)
+ab
+(image layout=embedded width=2 height=1)
+(image layout=embedded width=6 height=1)
+(image layout=surrounded width=1 height=20)
+ab
+(image layout=surrounded width=1 height=20)
+abcde
+ab bc cd x
+(image layout=surrounded width=1 height=30)
+yzah
+abc bc a cde
+(image layout=surrounded width=2 height=1)
+abc
+(image layout=surrounded width=4 height=20)
+bcd (image layout=surrounded width=2 height=20)
+abcd
+(image layout=embedded width=4 height=1)
+(image layout=embedded width=5 height=1)
+(image layout=embedded width=10 height=1)
+(image layout=embedded width=11 height=1)
+
+
+
+0 0
+5 0
+9 0
+14 0
+19 0
+1 2
+10 2
+16 2
+1 5
+10 5
+1 7
+7 7
+12 7
+14 9
+18 11
+3 13
+18 13
+10 29
+0 33
+10 39
+0 101
+
