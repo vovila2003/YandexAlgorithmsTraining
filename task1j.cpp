@@ -2,8 +2,8 @@
 
 #include <iostream>
 #include <vector>
-#include <any>
 #include <sstream>
+#include <map>
 
 using namespace std;
 
@@ -15,10 +15,16 @@ enum class ImageType {
     Floating = 2
 };
 
+map<string, ImageType> stringToImageType {
+    {"embedded", ImageType::Embedded},
+    {"surrounded", ImageType::Surrounded},
+    {"floating", ImageType::Floating},
+};
+
 struct Image {
     size_t width;
     size_t height;
-    ImageType type;
+    ImageType layout;
     int dx;
     int dy;
     int beginX;
@@ -29,8 +35,19 @@ struct Word {
     int letterCount;
 };
 
+enum class ElementType {
+    Word = 0,
+    Image = 1,
+};
+
+struct Element {
+    ElementType type;
+    Word word;
+    Image image;
+};
+
 struct Paragraph {
-    vector<any> elements;
+    vector<Element> elements;
 };
 
 struct Fragment {
@@ -50,6 +67,28 @@ struct Document {
     Document(size_t w, size_t h, size_t c) : pageWidth(w), lineHeight(h), letterWidth(c) {}
 };
 
+void parseImageParameter(Image& image, const string& text) {
+    stringstream stream(text);
+    string name, valueString;
+    getline(stream, name, '=');
+    getline(stream, valueString);
+    if (name == "width") {
+        int value = stoi(valueString);
+        image.width = value;
+    } else if (name == "height") {
+        int value = stoi(valueString);
+        image.height = value;
+    } else if (name == "layout") {
+        image.layout = stringToImageType[valueString];
+    } else if (name == "dx") {
+        int value = stoi(valueString);
+        image.dx = value;
+    } else if (name == "dy") {
+        int value = stoi(valueString);
+        image.dy = value;
+    }
+}
+
 void readDocument(Document& document, istream& inputStream) {
     string line;
     Paragraph paragraph;
@@ -57,36 +96,44 @@ void readDocument(Document& document, istream& inputStream) {
     while (getline(inputStream, line)) {
         if (line.find_first_not_of(' ') == string::npos || line.empty()) { // empty line -> new paragraph
             document.paragraphs.push_back(paragraph);
-            paragraph.elements.clear();
-            cout << "EMPTY LINE\n";
+            paragraph = Paragraph();
             continue;
         }
         string text;
         stringstream stream(line);
-        // Image image;
-        // Word word;
+        Image image;
+        Word word;
         while(getline(stream, text, ' ')) {
-            if (!isImage) { // WORD
-                if (text == "(image") { //
+            if (!isImage) {
+                if (text == "(image") {
                     isImage = true;
-                    cout << "BEGIN IMAGE" << endl;
+                    image = Image();
                 } else {
-                    cout << "READ WORD: ";
-                    cout << text << endl;
+                    word.letterCount = text.size();
+                    Element element;
+                    element.type = ElementType::Word;
+                    element.word = word;
+                    paragraph.elements.push_back(element);
+                    word = Word();
                 }
-            } else { //IMAGE
+            } else {
                 if (isImage && text.back() == ')') {
                     isImage = false;
                     text.pop_back();
                 }
-                cout << "READ IMAGE PARAMETER: ";
-                cout << text << endl;
+                parseImageParameter(image, text);
+
                 if (!isImage) {
-                    cout << "END IMAGE" << endl;
+                    Element element;
+                    element.type = ElementType::Image;
+                    element.image = image;
+                    paragraph.elements.push_back(element);
+                    image = Image();
                 }
             }
         }
     }
+    document.paragraphs.push_back(paragraph);
 }
 
 void Task1J::doTask()
@@ -94,7 +141,7 @@ void Task1J::doTask()
     size_t w, h, c;
     cin >> w >> h >> c;
     Document document(w, h, c);
-    // readDocument(document);
+    // readDocument(document, cin);
 }
 
 void Task1J::test()
@@ -117,4 +164,6 @@ void Task1J::test()
     stringstream stream(input);
     Document document(100, 10, 10);
     readDocument(document, stream);
+
+    cout << "DONE";
 }
