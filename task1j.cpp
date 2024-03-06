@@ -4,10 +4,34 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include <set>
 
 using namespace std;
 
 Task1J::Task1J() {}
+
+struct Rect {
+    size_t x;
+    size_t y;
+    size_t width;
+    size_t height;
+
+    Rect(const Rect& other) :
+        x(other.x),
+        y(other.y),
+        width(other.width),
+        height(other.height)
+    {}
+
+    Rect(size_t x, size_t y, size_t width, size_t height) :
+        x(x),
+        y(y),
+        width(width),
+        height(height)
+    {}
+};
+
+set<Rect> surroundedSet;
 
 enum class ImageType {
     Embedded = 0,
@@ -171,6 +195,11 @@ pair<bool, size_t> tryInsert(const Fragment& fragment, size_t pageWidth, size_t 
     return make_pair(width <= pageWidth, width);
 }
 
+pair<bool, size_t> tryInsertSurrounded(const Fragment& fragment, size_t pageWidth, size_t elementWidth) {
+    size_t width = fragment.x + fragment.width + elementWidth;
+    return make_pair(width <= pageWidth, width);
+}
+
 void updateImage(Image& image, const Fragment& fragment) {
     image.beginX = fragment.x + fragment.width - image.width;
     image.beginY = fragment.y;
@@ -180,6 +209,76 @@ void updateFragment(Fragment& fragment, size_t width, size_t height, size_t h) {
     fragment.width = width;
     if (height > h) {
         fragment.height = height;
+    }
+}
+
+void insertFragmentOnNewLine(Document& document, Fragment& fragment, Fragment& prevFragment, size_t h) {
+    document.fragments.push_back(fragment);
+    prevFragment = fragment;
+    fragment = Fragment::fragmentOnNewLine(prevFragment, h);
+}
+
+void processWord(Element& element, Fragment& fragment, size_t w, size_t h, size_t c,
+                 Document& document, Fragment& prevFragment) {
+    int wordWidth = element.word.letterCount * c;
+    auto result = tryInsert(fragment, w, wordWidth, c);
+    if (result.first) { // can
+        fragment.width = result.second;
+    } else { // can not
+        insertFragmentOnNewLine(document, fragment, prevFragment, h);
+        fragment.width = wordWidth;
+    }
+    fragment.empty = false;
+}
+
+void processEmbeddedImage(Image& image, Fragment& fragment, size_t w, size_t h, size_t c,
+                          Document& document, Fragment& prevFragment) {
+    auto result = tryInsert(fragment, w, image.width, c);
+    size_t width;
+    if (result.first) { // can
+        width = result.second;
+    } else { // can not
+        insertFragmentOnNewLine(document, fragment, prevFragment, h);
+        width = image.width;
+    }
+    updateFragment(fragment, width, image.height, h);
+    updateImage(image, fragment);
+    fragment.empty = false;
+}
+
+void processSurroundedImage(Image& image, Fragment& fragment, size_t w, size_t h, size_t c,
+                          Document& document, Fragment& prevFragment) {
+
+    auto result = tryInsertSurrounded(fragment, w, image.width);
+    if (result.first) { // can
+        surroundedSet.insert(Rect(fragment.x + fragment.width, fragment.y, image.width, image.height));
+        fragment.width = result.second;
+        updateImage(image, fragment);
+    } else { // can not
+        insertFragmentOnNewLine(document, fragment, prevFragment, h);
+        // вставить проверку на то, что новый фрагмент сможет вместить с учетом surroundedSet. Там же смотреть по этим rectб при необходимости удалять
+
+    }
+}
+
+void processFloatingImage(Image& image, Fragment& fragment, size_t w, size_t h, size_t c,
+                            Document& document, Fragment& prevFragment) {
+
+}
+
+void processElement(Element& element, Fragment& fragment, size_t w, size_t h, size_t c,
+                    Document& document, Fragment& prevFragment) {
+    if (element.type == ElementType::Word) {
+        processWord(element, fragment, w, h, c, document, prevFragment);
+    } else if (element.type == ElementType::Image) {
+        Image& image = element.image;
+        if (image.layout == ImageType::Embedded) {
+            processEmbeddedImage(image, fragment, w, h, c, document, prevFragment);
+        } else if (image.layout == ImageType::Surrounded) {
+            processSurroundedImage(image, fragment, w, h, c, document, prevFragment);
+        } else if (image.layout == ImageType::Floating) {
+            processFloatingImage(image, fragment, w, h, c, document, prevFragment);
+        }
     }
 }
 
@@ -193,36 +292,8 @@ void processFragments(Document& document) {
         fragment = Fragment::fragmentOnNewLine(prevFragment, h);
         Paragraph& paragraph = document.paragraphs[i];
         for (size_t j = 0; j < paragraph.elements.size(); ++j) {
-            Element& element = paragraph.elements[j];
-            if (element.type == ElementType::Word) {
-                int wordWidth = element.word.letterCount * c;
-                auto result = tryInsert(fragment, w, wordWidth, c);
-                if (result.first) { // can
-                    fragment.width = result.second;
-                } else { // can not
-                    document.fragments.push_back(fragment);
-                    prevFragment = fragment;
-                    fragment = Fragment::fragmentOnNewLine(prevFragment, h);
-                    fragment.width = wordWidth;
-                }
-                fragment.empty = false;
-            } else if (element.type == ElementType::Image) {
-                Image& image = element.image;
-                if (image.layout == ImageType::Embedded) {
-                    auto result = tryInsert(fragment, w, image.width, c);
-                    if (result.first) { // can
-                        updateFragment(fragment, result.second, image.height, h);
-                        updateImage(image, fragment);
-                    } else { // can not
-                        document.fragments.push_back(fragment);
-                        prevFragment = fragment;
-                        fragment = Fragment::fragmentOnNewLine(prevFragment, h);
-                        updateFragment(fragment, image.width, image.height, h);
-                        updateImage(image, fragment);
-                    }
-                    fragment.empty = false;
-                }
-            }
+            processElement(paragraph.elements[j], fragment, w, h, c,
+                           document, prevFragment);
         }
         document.fragments.push_back(fragment);
         prevFragment = fragment;
@@ -257,18 +328,18 @@ void Task1J::test()
 {
     string input(
         "start (image layout=embedded width=12 height=5)\n"
-    //     "(image layout=surrounded width=25 height=58)\n"
-    //     "and word is \n"
-    //     "(image layout=floating dx=18 dy=-15 width=25 height=20)\n"
-    //     "here new \n"
+        "(image layout=surrounded width=25 height=58)\n"
+        "and word is \n"
+        "(image layout=floating dx=18 dy=-15 width=25 height=20)\n"
+        "here new \n"
         "(image layout=embedded width=20 height=22)\n"
         "another\n"
         "(image layout=embedded width=40 height=19)\n"
         "longword\n"
         "\n"
         "new paragraph\n"
-    //     "(image layout=surrounded width=5 height=30)\n"
-    //     "(image layout=floating width=20 height=35 dx=50 dy=-16)"
+        "(image layout=surrounded width=5 height=30)\n"
+        "(image layout=floating width=20 height=35 dx=50 dy=-16)"
         );
 
     // string input(
