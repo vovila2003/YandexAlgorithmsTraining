@@ -55,6 +55,33 @@ struct Fragment {
     size_t y;
     size_t width;
     size_t height;
+    bool empty;
+
+    Fragment() :
+        x(0),
+        y(0),
+        width(0),
+        height(0),
+        empty(true)
+    {}
+
+    static Fragment fragmentOnNewLine(const Fragment& prevFragment, size_t h) {
+        Fragment fragment;
+        fragment.x = 0;
+        fragment.y = prevFragment.y + prevFragment.height;
+        fragment.width = 0;
+        fragment.height = h;
+        return fragment;
+    }
+
+    static Fragment fragmentOnSameLine(const Fragment& prevFragment) {
+        Fragment fragment;
+        fragment.x = prevFragment.x + prevFragment.width;
+        fragment.y = prevFragment.y;
+        fragment.width = 0;
+        fragment.height = prevFragment.height;
+        return fragment;
+    }
 };
 
 struct Document {
@@ -136,34 +163,125 @@ void readDocument(Document& document, istream& inputStream) {
     document.paragraphs.push_back(paragraph);
 }
 
+pair<bool, size_t> tryInsert(const Fragment& fragment, size_t pageWidth, size_t elementWidth, size_t c) {
+    size_t width = fragment.x + fragment.width + elementWidth;
+    if (!fragment.empty) {
+        width += c;
+    }
+    return make_pair(width <= pageWidth, width);
+}
+
+void updateImage(Image& image, const Fragment& fragment) {
+    image.beginX = fragment.x + fragment.width - image.width;
+    image.beginY = fragment.y;
+}
+
+void updateFragment(Fragment& fragment, size_t width, size_t height, size_t h) {
+    fragment.width = width;
+    if (height > h) {
+        fragment.height = height;
+    }
+}
+
+void processFragments(Document& document) {
+    size_t w = document.pageWidth;
+    size_t h = document.lineHeight;
+    size_t c = document.letterWidth;
+    Fragment prevFragment;
+    Fragment fragment = Fragment::fragmentOnNewLine(prevFragment, h);
+    for (size_t i = 0; i < document.paragraphs.size(); ++i) {
+        fragment = Fragment::fragmentOnNewLine(prevFragment, h);
+        Paragraph& paragraph = document.paragraphs[i];
+        for (size_t j = 0; j < paragraph.elements.size(); ++j) {
+            Element& element = paragraph.elements[j];
+            if (element.type == ElementType::Word) {
+                int wordWidth = element.word.letterCount * c;
+                auto result = tryInsert(fragment, w, wordWidth, c);
+                if (result.first) { // can
+                    fragment.width = result.second;
+                } else { // can not
+                    document.fragments.push_back(fragment);
+                    prevFragment = fragment;
+                    fragment = Fragment::fragmentOnNewLine(prevFragment, h);
+                    fragment.width = wordWidth;
+                }
+                fragment.empty = false;
+            } else if (element.type == ElementType::Image) {
+                Image& image = element.image;
+                if (image.layout == ImageType::Embedded) {
+                    auto result = tryInsert(fragment, w, image.width, c);
+                    if (result.first) { // can
+                        updateFragment(fragment, result.second, image.height, h);
+                        updateImage(image, fragment);
+                    } else { // can not
+                        document.fragments.push_back(fragment);
+                        prevFragment = fragment;
+                        fragment = Fragment::fragmentOnNewLine(prevFragment, h);
+                        updateFragment(fragment, image.width, image.height, h);
+                        updateImage(image, fragment);
+                    }
+                    fragment.empty = false;
+                }
+            }
+        }
+        document.fragments.push_back(fragment);
+        prevFragment = fragment;
+        fragment = Fragment::fragmentOnNewLine(prevFragment, h);
+        prevFragment = fragment;
+        document.fragments.push_back(fragment);
+    }
+}
+
+void printResult(const Document& document, ostream& output) {
+    for (size_t i = 0; i < document.paragraphs.size(); ++i) {
+        for (size_t j = 0; j < document.paragraphs.at(i).elements.size(); ++j) {
+            const Element& element = document.paragraphs.at(i).elements.at(j);
+            if (element.type != ElementType::Image) continue;
+
+            output << element.image.beginX << " " << element.image.beginY << endl;
+        }
+    }
+}
+
 void Task1J::doTask()
 {
     size_t w, h, c;
     cin >> w >> h >> c;
     Document document(w, h, c);
-    // readDocument(document, cin);
+    readDocument(document, cin);
+    processFragments(document);
+    printResult(document, cout);
 }
 
 void Task1J::test()
 {
     string input(
         "start (image layout=embedded width=12 height=5)\n"
-        "(image layout=surrounded width=25 height=58)\n"
-        "and word is \n"
-        "(image layout=floating dx=18 dy=-15 width=25 height=20)\n"
-        "here new \n"
+    //     "(image layout=surrounded width=25 height=58)\n"
+    //     "and word is \n"
+    //     "(image layout=floating dx=18 dy=-15 width=25 height=20)\n"
+    //     "here new \n"
         "(image layout=embedded width=20 height=22)\n"
         "another\n"
         "(image layout=embedded width=40 height=19)\n"
         "longword\n"
         "\n"
         "new paragraph\n"
-        "(image layout=surrounded width=5 height=30)\n"
-        "(image layout=floating width=20 height=35 dx=50 dy=-16)"
+    //     "(image layout=surrounded width=5 height=30)\n"
+    //     "(image layout=floating width=20 height=35 dx=50 dy=-16)"
         );
-    stringstream stream(input);
-    Document document(100, 10, 10);
-    readDocument(document, stream);
 
-    cout << "DONE";
+    // string input(
+    //     "one two three\n"
+    //     "\n"
+    //     "four five six\n"
+    //     "seven eight nine\n"
+    //     "\n"
+    //     "ten\n"
+    //     );
+    stringstream stream(input);
+    Document document(120, 10, 8);
+    readDocument(document, stream);
+    processFragments(document);
+    printResult(document, cout);
 }
