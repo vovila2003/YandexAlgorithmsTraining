@@ -36,12 +36,12 @@ struct Rect {
     }
 
     bool operator<(const Rect& other) const {
-        if (x < other.x) {
-            return true;
-        } else if (y < other.y) {
-            return true;
-        } else if (width < other.width) {
-            return true;
+        if (x != other.x) {
+            return x < other.x;
+        } else if (y != other.y) {
+            return y < other.y;
+        } else if (width != other.width) {
+            return width < other.width;
         }
         return height < other.height;
     }
