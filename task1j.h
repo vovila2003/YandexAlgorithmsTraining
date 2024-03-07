@@ -5,7 +5,6 @@ class Task1J
 {
 public:
     Task1J();
-    void doTask();
     void test();
 };
 

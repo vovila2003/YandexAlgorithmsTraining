@@ -29,4 +29,5 @@ HEADERS += \
     task1j.h
 
 DISTFILES += \
+    currentTest.txt \
     tests.txt

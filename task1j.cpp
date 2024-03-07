@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <fstream>
 #include <map>
 #include <unordered_set>
 
@@ -173,11 +174,15 @@ void parseLine(bool& isImage, string& text, Image& image, Word& word, Paragraph&
     }
 }
 
-void readDocument(Document& document, istream& inputStream) {
+Document readDocument(istream& inputStream) {
     string line;
     Paragraph paragraph;
     bool isImage = false;
-    //getline(inputStream, line);
+    getline(inputStream, line);
+    stringstream ss(line);
+    size_t w, h, c;
+    ss >> w >> h >> c;
+    Document document(w, h, c);
     while (getline(inputStream, line)) {
         if (line.find_first_not_of(' ') == string::npos || line.empty()) { // empty line -> new paragraph
             document.paragraphs.push_back(paragraph);
@@ -193,6 +198,7 @@ void readDocument(Document& document, istream& inputStream) {
         }
     }
     document.paragraphs.push_back(paragraph);
+    return document;
 }
 
 pair<bool, size_t> isSegmentIntersect(size_t startX, size_t finishX, size_t y) {
@@ -244,12 +250,16 @@ void checkSurroundedSet(size_t y) {
     }
 }
 
-void findNewFragment(Fragment& fragment, size_t w, size_t h,
-                     size_t neededWidth) {
+void findNewFragment(Fragment& fragment, size_t w, size_t h, size_t c,
+                     size_t neededWidth, bool useDelimeter = false) {
     size_t startX = fragment.x + fragment.width;
     size_t finishX = startX + neededWidth;
 
     size_t y = fragment.y;
+
+    if (useDelimeter) {
+        finishX += c;
+    }
 
     if (finishX >= w) {
         y += fragment.height > h ? fragment.height : h;
@@ -277,23 +287,29 @@ void findNewFragment(Fragment& fragment, size_t w, size_t h,
     checkSurroundedSet(y);
 }
 
-void  processWord(Element& element, Fragment& fragment, size_t w, size_t h, size_t c,
-                 Document& document) {
+void  processWord(Element& element, Fragment& fragment, Document& document) {
+    size_t w = document.pageWidth;
+    size_t h = document.lineHeight;
+    size_t c = document.letterWidth;
+
     int wordWidth = element.word.letterCount * c;
     auto result = canInsert(fragment, w, wordWidth, c);
     if (result.first) {
         fragment.width = result.second;
     } else {
         document.fragments.push_back(fragment);
-        findNewFragment(fragment, w, h, wordWidth);
+        findNewFragment(fragment, w, h, c, wordWidth, true);
 
         fragment.width = wordWidth;
     }
     fragment.empty = false;
 }
 
-void processEmbeddedImage(Image& image, Fragment& fragment, size_t w, size_t h, size_t c,
-                          Document& document) {
+void processEmbeddedImage(Image& image, Fragment& fragment, Document& document) {
+    size_t w = document.pageWidth;
+    size_t h = document.lineHeight;
+    size_t c = document.letterWidth;
+
     auto result = canInsert(fragment, w, image.width, c);
     size_t width;
     if (result.first) {
@@ -301,7 +317,7 @@ void processEmbeddedImage(Image& image, Fragment& fragment, size_t w, size_t h, 
     } else {
         document.fragments.push_back(fragment);
         width = image.width;
-        findNewFragment(fragment, w, h, width);
+        findNewFragment(fragment, w, h, c, width);
     }
     updateFragment(fragment, width, image.height);
     updateImage(image, fragment);
@@ -315,8 +331,10 @@ void newFragment(Fragment& fragment, Document& document) {
     fragment.empty = true;
 }
 
-void processSurroundedImage(Image& image, Fragment& fragment, size_t w, size_t h,
-                          Document& document) {
+void processSurroundedImage(Image& image, Fragment& fragment, Document& document) {
+    size_t w = document.pageWidth;
+    size_t h = document.lineHeight;
+    size_t c = document.letterWidth;
 
     newFragment(fragment, document);
     auto result = canInsert(fragment, w, image.width, 0);
@@ -325,7 +343,7 @@ void processSurroundedImage(Image& image, Fragment& fragment, size_t w, size_t h
         fragment.width = result.second;
     } else {
         document.fragments.push_back(fragment);
-        findNewFragment(fragment, w, h, image.width);
+        findNewFragment(fragment, w, h, c, image.width);
         surroundedSet.insert(Rect(0, fragment.y, image.width, image.height));
         fragment.width = image.width;
     }
@@ -363,18 +381,18 @@ void processFloatingImage(Image& image, Fragment& fragment, size_t w, bool relat
 }
 
 
-void processElement(Element& element, Fragment& fragment, size_t w, size_t h, size_t c,
-                    Document& document) {
+void processElement(Element& element, Fragment& fragment, Document& document) {
+    size_t w = document.pageWidth;
     if (element.type == ElementType::Word) {
-        processWord(element, fragment, w, h, c, document);
+        processWord(element, fragment, document);
         lastFloatingImage = false;
     } else if (element.type == ElementType::Image) {
         Image& image = element.image;
         if (image.layout == ImageType::Embedded) {
-            processEmbeddedImage(image, fragment, w, h, c, document);
+            processEmbeddedImage(image, fragment, document);
             lastFloatingImage = false;
         } else if (image.layout == ImageType::Surrounded) {
-            processSurroundedImage(image, fragment, w, h, document);
+            processSurroundedImage(image, fragment, document);
             lastFloatingImage = false;
         } else if (image.layout == ImageType::Floating) {
             processFloatingImage(image, fragment, w, lastFloatingImage);
@@ -384,16 +402,13 @@ void processElement(Element& element, Fragment& fragment, size_t w, size_t h, si
 }
 
 void processFragments(Document& document) {
-    size_t w = document.pageWidth;
     size_t h = document.lineHeight;
-    size_t c = document.letterWidth;
     Fragment fragment;
     fragment.height = h;
     for (size_t i = 0; i < document.paragraphs.size(); ++i) {
         Paragraph& paragraph = document.paragraphs[i];
         for (size_t j = 0; j < paragraph.elements.size(); ++j) {
-            processElement(paragraph.elements[j], fragment, w, h, c,
-                           document);
+            processElement(paragraph.elements[j], fragment, document);
         }
         document.fragments.push_back(fragment);
         fragment.toNewLine(h);
@@ -416,43 +431,15 @@ void printResult(const Document& document, ostream& output) {
     }
 }
 
-void Task1J::doTask()
-{
-    size_t w, h, c;
-    cin >> w >> h >> c;
-    Document document(w, h, c);
-    readDocument(document, cin);
-    processFragments(document);
-    printResult(document, cout);
-}
-
 void Task1J::test()
 {
-    string input(
-        "image\n"
-        "-a-\n"
-        "dx (image layout=floating width=1 height=1 dx=0 dy=0) br\n"
-        "dy (image layout=floating width=1 height=1 dx=0 dy=0)\n"
-        "dx\n"
-        "ca (image layout=floating width=1 height=1 dx=0 dy=0) ca\n"
-        "c v f\n"
-        "''a\n"
-        ".mb\n"
-        "q w e r t y u i o p a s d f g h j k l z x c v b n m\n"
-        "Q W E R T Y U I O P A S D F G H J K L Z X C V B N M\n"
-        ". , : ; ! ? - '\n"
-        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
-        "\n"
-        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
-        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
-        "\n"
-        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
-        "(image layout=floating width=1 height=1 dx=0 dy=0)"
-        );
-
-    stringstream stream(input);
-    Document document(10, 3, 2);
-    readDocument(document, stream);
-    processFragments(document);
-    printResult(document, cout);
+    ifstream stream("currentTest.txt");
+    if (stream.is_open()) {
+        Document document = readDocument(stream);
+        processFragments(document);
+        printResult(document, cout);
+    } else {
+        cout << "file error";
+    }
+    stream.close();
 }
