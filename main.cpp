@@ -85,8 +85,8 @@ int main()
 //    task1i.doTask();
 
     Task1J task1j;
-    // task1j.test();
-    task1j.doTask();
+    task1j.test();
+    // task1j.doTask();
 
     return 0;
 }

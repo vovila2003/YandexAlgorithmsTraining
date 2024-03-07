@@ -143,11 +143,41 @@ void parseImageParameter(Image& image, const string& text) {
     }
 }
 
+void parseLine(bool& isImage, string& text, Image& image, Word& word, Paragraph& paragraph) {
+    if (!isImage) {
+        if (text == "(image") {
+            isImage = true;
+            image = Image();
+        } else {
+            word.letterCount = text.size();
+            Element element;
+            element.type = ElementType::Word;
+            element.word = word;
+            paragraph.elements.push_back(element);
+            word = Word();
+        }
+    } else {
+        if (isImage && text.back() == ')') {
+            isImage = false;
+            text.pop_back();
+        }
+        parseImageParameter(image, text);
+
+        if (!isImage) {
+            Element element;
+            element.type = ElementType::Image;
+            element.image = image;
+            paragraph.elements.push_back(element);
+            image = Image();
+        }
+    }
+}
+
 void readDocument(Document& document, istream& inputStream) {
     string line;
     Paragraph paragraph;
     bool isImage = false;
-    getline(inputStream, line);
+    //getline(inputStream, line);
     while (getline(inputStream, line)) {
         if (line.find_first_not_of(' ') == string::npos || line.empty()) { // empty line -> new paragraph
             document.paragraphs.push_back(paragraph);
@@ -159,39 +189,13 @@ void readDocument(Document& document, istream& inputStream) {
         Image image;
         Word word;
         while(getline(stream, text, ' ')) {
-            if (!isImage) {
-                if (text == "(image") {
-                    isImage = true;
-                    image = Image();
-                } else {
-                    word.letterCount = text.size();
-                    Element element;
-                    element.type = ElementType::Word;
-                    element.word = word;
-                    paragraph.elements.push_back(element);
-                    word = Word();
-                }
-            } else {
-                if (isImage && text.back() == ')') {
-                    isImage = false;
-                    text.pop_back();
-                }
-                parseImageParameter(image, text);
-
-                if (!isImage) {
-                    Element element;
-                    element.type = ElementType::Image;
-                    element.image = image;
-                    paragraph.elements.push_back(element);
-                    image = Image();
-                }
-            }
+            parseLine(isImage, text, image, word, paragraph);
         }
     }
     document.paragraphs.push_back(paragraph);
 }
 
-pair<bool, size_t> isSegmentInterseсt(size_t startX, size_t finishX, size_t y) {
+pair<bool, size_t> isSegmentIntersect(size_t startX, size_t finishX, size_t y) {
     for (auto it = surroundedSet.begin(); it != surroundedSet.end(); ++it) {
         auto& rect = *it;
         bool ok = (((finishX >= rect.x) && (finishX < rect.x + rect.width)) ||
@@ -210,7 +214,7 @@ pair<bool, size_t> canInsert(const Fragment& fragment, size_t pageWidth,
         finishX += c;
     }
     bool can = (finishX <= pageWidth) &&
-               !isSegmentInterseсt(startX, finishX, fragment.y).first;
+               !isSegmentIntersect(startX, finishX, fragment.y).first;
     return make_pair(can, finishX - fragment.x);
 }
 
@@ -253,7 +257,7 @@ void findNewFragment(Fragment& fragment, size_t w, size_t h,
         finishX = neededWidth;
     }
 
-    auto result = isSegmentInterseсt(startX, finishX, y);
+    auto result = isSegmentIntersect(startX, finishX, y);
     while(result.first) {
         startX = result.second;
         finishX = startX + neededWidth;
@@ -262,7 +266,7 @@ void findNewFragment(Fragment& fragment, size_t w, size_t h,
             startX = 0;
             finishX = neededWidth;
         }
-        result = isSegmentInterseсt(startX, finishX, y);
+        result = isSegmentIntersect(startX, finishX, y);
     }
 
     fragment = Fragment();
@@ -277,9 +281,9 @@ void  processWord(Element& element, Fragment& fragment, size_t w, size_t h, size
                  Document& document) {
     int wordWidth = element.word.letterCount * c;
     auto result = canInsert(fragment, w, wordWidth, c);
-    if (result.first) { // can
+    if (result.first) {
         fragment.width = result.second;
-    } else { // can not
+    } else {
         document.fragments.push_back(fragment);
         findNewFragment(fragment, w, h, wordWidth);
 
@@ -292,9 +296,9 @@ void processEmbeddedImage(Image& image, Fragment& fragment, size_t w, size_t h, 
                           Document& document) {
     auto result = canInsert(fragment, w, image.width, c);
     size_t width;
-    if (result.first) { // can
+    if (result.first) {
         width = result.second;
-    } else { // can not
+    } else {
         document.fragments.push_back(fragment);
         width = image.width;
         findNewFragment(fragment, w, h, width);
@@ -316,10 +320,10 @@ void processSurroundedImage(Image& image, Fragment& fragment, size_t w, size_t h
 
     newFragment(fragment, document);
     auto result = canInsert(fragment, w, image.width, 0);
-    if (result.first) { // can
+    if (result.first) {
         surroundedSet.insert(Rect(fragment.x + fragment.width, fragment.y, image.width, image.height));
         fragment.width = result.second;
-    } else { // can not
+    } else {
         document.fragments.push_back(fragment);
         findNewFragment(fragment, w, h, image.width);
         surroundedSet.insert(Rect(0, fragment.y, image.width, image.height));
@@ -393,6 +397,7 @@ void processFragments(Document& document) {
         }
         document.fragments.push_back(fragment);
         fragment.toNewLine(h);
+        lastFloatingImage = false;
     }
 }
 
@@ -424,35 +429,29 @@ void Task1J::doTask()
 void Task1J::test()
 {
     string input(
-        "start (image layout=embedded width=12 height=5)\n"
-        "(image layout=surrounded width=25 height=58)\n"
-        "and word is \n"
-        "(image layout=floating dx=18 dy=-15 width=25 height=20)\n"
-        "here new \n"
-        "(image layout=embedded width=20 height=22)\n"
-        "another\n"
-        "(image layout=embedded width=40 height=19)\n"
-        "longword\n"
+        "image\n"
+        "-a-\n"
+        "dx (image layout=floating width=1 height=1 dx=0 dy=0) br\n"
+        "dy (image layout=floating width=1 height=1 dx=0 dy=0)\n"
+        "dx\n"
+        "ca (image layout=floating width=1 height=1 dx=0 dy=0) ca\n"
+        "c v f\n"
+        "''a\n"
+        ".mb\n"
+        "q w e r t y u i o p a s d f g h j k l z x c v b n m\n"
+        "Q W E R T Y U I O P A S D F G H J K L Z X C V B N M\n"
+        ". , : ; ! ? - '\n"
+        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
         "\n"
-        "new paragraph\n"
-        "(image layout=surrounded width=5 height=30)\n"
-        "(image layout=floating width=20 height=35 dx=50 dy=-16)"
+        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
+        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
+        "\n"
+        "(image layout=floating width=1 height=1 dx=0 dy=0)\n"
+        "(image layout=floating width=1 height=1 dx=0 dy=0)"
         );
 
-    // string input(
-    //     "one two three\n"
-    //     "\n"
-    //     "four five six\n"
-    //     "seven eight nine\n"
-    //     "\n"
-    //     "ten\n"
-    //     );
-    // string input(
-    //     "(image dx=10 dy=11 height=100 width=20 layout=floating)"
-    //     );
     stringstream stream(input);
-    Document document(120, 10, 8);
-    // Document document(100, 2, 3);
+    Document document(10, 3, 2);
     readDocument(document, stream);
     processFragments(document);
     printResult(document, cout);
