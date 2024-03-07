@@ -5,7 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
-#include <unordered_set>
+#include <set>
 
 using namespace std;
 
@@ -31,22 +31,12 @@ struct Rect {
         height(height)
     {}
 
-    bool operator==(const Rect& other) const {
-        return x == other.x && y == other.y && width == other.width && height == other.height;
+    bool operator<(const Rect& other) const {
+        return x < other.x;
     }
 };
 
-struct RectHash
-{
-    size_t operator()(const Rect& r) const noexcept
-    {
-        size_t h1 = hash<size_t>{}(r.x);
-        size_t h2 = hash<size_t>{}(r.y);
-        return h1 ^ (h2 << 1);
-    }
-};
-
-unordered_set<Rect, RectHash> surroundedSet;
+set<Rect> surroundedSet;
 
 enum class ImageType {
     Embedded = 0,
@@ -95,13 +85,15 @@ struct Fragment {
     size_t width;
     size_t height;
     bool empty;
+    bool isExtended;
 
     Fragment() :
         x(0),
         y(0),
         width(0),
         height(0),
-        empty(true)
+        empty(true),
+        isExtended(false)
     {}
 
     void toNewLine(size_t h) {
@@ -204,8 +196,7 @@ Document readDocument(istream& inputStream) {
 pair<bool, size_t> isSegmentIntersect(size_t startX, size_t finishX, size_t y) {
     for (auto it = surroundedSet.begin(); it != surroundedSet.end(); ++it) {
         auto& rect = *it;
-        bool ok = (((finishX >= rect.x) && (finishX < rect.x + rect.width)) ||
-                   ((finishX >= rect.x + rect.width) && (startX < rect.x))) &&
+        bool ok = (finishX > rect.x) && (startX < rect.x + rect.width) &&
                   (y >= rect.y) && (y < rect.y + rect.height);
         if (ok) return make_pair(true, rect.x + rect.width);
     }
@@ -256,33 +247,41 @@ void findNewFragment(Fragment& fragment, size_t w, size_t h, size_t c,
     size_t finishX = startX + neededWidth;
 
     size_t y = fragment.y;
+    size_t startY = y;
 
-    if (useDelimeter) {
+    if (useDelimeter && fragment.isExtended) {
         finishX += c;
     }
 
-    if (finishX >= w) {
+    if (finishX > w) {
         y += fragment.height > h ? fragment.height : h;
         startX = 0;
         finishX = neededWidth;
+        fragment.isExtended = false;
     }
 
     auto result = isSegmentIntersect(startX, finishX, y);
     while(result.first) {
         startX = result.second;
         finishX = startX + neededWidth;
-        if (finishX >= w) {
+
+        if (finishX > w) {
             y += fragment.height > h ? fragment.height : h;
             startX = 0;
             finishX = neededWidth;
+            fragment.isExtended = false;
         }
         result = isSegmentIntersect(startX, finishX, y);
     }
 
-    fragment = Fragment();
     fragment.x = startX;
     fragment.y = y;
-    fragment.height = h;
+    if (startY != y) {
+        fragment.height = h;
+    }
+    fragment.width = 0;
+    fragment.empty = true;
+    fragment.isExtended = false;
 
     checkSurroundedSet(y);
 }
@@ -297,12 +296,15 @@ void  processWord(Element& element, Fragment& fragment, Document& document) {
     if (result.first) {
         fragment.width = result.second;
     } else {
-        document.fragments.push_back(fragment);
+        if (fragment.width != 0) {
+            document.fragments.push_back(fragment);
+        }
         findNewFragment(fragment, w, h, c, wordWidth, true);
 
         fragment.width = wordWidth;
     }
     fragment.empty = false;
+    fragment.isExtended = true;
 }
 
 void processEmbeddedImage(Image& image, Fragment& fragment, Document& document) {
@@ -315,13 +317,16 @@ void processEmbeddedImage(Image& image, Fragment& fragment, Document& document) 
     if (result.first) {
         width = result.second;
     } else {
-        document.fragments.push_back(fragment);
+        if (fragment.width != 0) {
+            document.fragments.push_back(fragment);
+        }
         width = image.width;
-        findNewFragment(fragment, w, h, c, width);
+        findNewFragment(fragment, w, h, c, width, true);
     }
     updateFragment(fragment, width, image.height);
     updateImage(image, fragment);
     fragment.empty = false;
+    fragment.isExtended = true;
 }
 
 void newFragment(Fragment& fragment, Document& document) {
@@ -329,6 +334,7 @@ void newFragment(Fragment& fragment, Document& document) {
     fragment.x += fragment.width;
     fragment.width = 0;
     fragment.empty = true;
+    fragment.isExtended = false;
 }
 
 void processSurroundedImage(Image& image, Fragment& fragment, Document& document) {
@@ -342,19 +348,22 @@ void processSurroundedImage(Image& image, Fragment& fragment, Document& document
         surroundedSet.insert(Rect(fragment.x + fragment.width, fragment.y, image.width, image.height));
         fragment.width = result.second;
     } else {
-        document.fragments.push_back(fragment);
+        if (fragment.width != 0) {
+            document.fragments.push_back(fragment);
+        }
         findNewFragment(fragment, w, h, c, image.width);
         surroundedSet.insert(Rect(0, fragment.y, image.width, image.height));
         fragment.width = image.width;
     }
     updateImage(image, fragment);
     newFragment(fragment, document);
+    fragment.isExtended = false;
 }
 
 int checkImagePosition(const Image& image, int x, size_t w) {
     if (x < 0) {
         x = 0;
-    } else if (x + image.width >= w) {
+    } else if (x + image.width > w) {
         x = w - image.width;
     }
     return x;
@@ -363,7 +372,7 @@ int checkImagePosition(const Image& image, int x, size_t w) {
 Image lastImage;
 bool lastFloatingImage;
 
-void processFloatingImage(Image& image, Fragment& fragment, size_t w, bool relativeFloatimgImage) {
+void processFloatingImage(Image& image, const Fragment& fragment, size_t w, bool relativeFloatimgImage) {
     int x, y;
     if (relativeFloatimgImage) {
         x = lastImage.beginX + lastImage.width;
@@ -411,7 +420,7 @@ void processFragments(Document& document) {
             processElement(paragraph.elements[j], fragment, document);
         }
         document.fragments.push_back(fragment);
-        fragment.toNewLine(h);
+        fragment.toNewLine(fragment.height);
         lastFloatingImage = false;
     }
 }
