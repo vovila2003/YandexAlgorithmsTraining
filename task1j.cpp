@@ -31,8 +31,19 @@ struct Rect {
         height(height)
     {}
 
+    bool operator==(const Rect& other) const {
+        return x == other.x && y == other.y;
+    }
+
     bool operator<(const Rect& other) const {
-        return x < other.x;
+        if (x < other.x) {
+            return true;
+        } else if (y < other.y) {
+            return true;
+        } else if (width < other.width) {
+            return true;
+        }
+        return height < other.height;
     }
 };
 
@@ -355,7 +366,7 @@ void processSurroundedImage(Image& image, Fragment& fragment, Document& document
             document.fragments.push_back(fragment);
         }
         findNewFragment(fragment, w, h, c, image.width);
-        surroundedSet.insert(Rect(0, fragment.y, image.width, image.height));
+        surroundedSet.insert(Rect(fragment.x + fragment.width, fragment.y, image.width, image.height));
         fragment.width = image.width;
     }
     updateImage(image, fragment);
