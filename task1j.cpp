@@ -98,8 +98,9 @@ struct Fragment {
 
     void toNewLine(size_t h) {
         x = 0;
-        y += h;
+        y += height;
         width = 0;
+        height = h;
         empty = true;
     }
 };
@@ -257,6 +258,7 @@ void findNewFragment(Fragment& fragment, size_t w, size_t h, size_t c,
         y += fragment.height > h ? fragment.height : h;
         startX = 0;
         finishX = neededWidth;
+        fragment.height = h;
         fragment.isExtended = false;
     }
 
@@ -269,6 +271,7 @@ void findNewFragment(Fragment& fragment, size_t w, size_t h, size_t c,
             y += fragment.height > h ? fragment.height : h;
             startX = 0;
             finishX = neededWidth;
+            fragment.height = h;
             fragment.isExtended = false;
         }
         result = isSegmentIntersect(startX, finishX, y);
@@ -420,7 +423,7 @@ void processFragments(Document& document) {
             processElement(paragraph.elements[j], fragment, document);
         }
         document.fragments.push_back(fragment);
-        fragment.toNewLine(fragment.height);
+        fragment.toNewLine(h);
         lastFloatingImage = false;
     }
 }
