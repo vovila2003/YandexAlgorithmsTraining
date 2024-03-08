@@ -16,7 +16,8 @@ SOURCES += main.cpp \
     task1i.cpp \
     task1j.cpp \
     task2a.cpp \
-    task2b.cpp
+    task2b.cpp \
+    task2c.cpp
 
 DISTFILES += \
     tests.txt
@@ -33,5 +34,6 @@ HEADERS += \
     task1i.h \
     task1j.h \
     task2a.h \
-    task2b.h
+    task2b.h \
+    task2c.h
 
