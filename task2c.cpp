@@ -11,7 +11,8 @@ void Task2C::doTask()
     int n;
     cin >> n;
     bool first = true;
-    int sum, maximum;
+    int sum = 0;
+    int maximum = 0;
     for (int i = 0; i < n; ++i) {
         int current;
         cin >> current;
@@ -25,8 +26,8 @@ void Task2C::doTask()
         }
     }
     int result;
-    if (maximum > (sum - maximum)) {
-        result = maximum - (sum - maximum);
+    if (2 * maximum > sum) {
+        result = 2 * maximum - sum;
     } else {
         result = sum;
     }

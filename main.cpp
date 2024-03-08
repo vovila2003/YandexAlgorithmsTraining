@@ -10,7 +10,8 @@
 //#include "task1j.h"
 //#include "task2a.h"
 //#include "task2b.h"
-#include "task2c.h"
+//#include "task2c.h"
+#include "task2d.h"
 
 int main()
 {
@@ -51,10 +52,12 @@ int main()
 
     // Task2A task2a;
     // task2a.doTask();
+
     // Task2B task2b;
     // task2b.doTask();
-    Task2C task2c;
-    task2c.doTask();
+
+    Task2D task2d;
+    task2d.doTask();
 
     return 0;
 }
