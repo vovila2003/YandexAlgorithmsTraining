@@ -1,7 +1,6 @@
 #include "task2e.h"
 
 #include <iostream>
-#include <map>
 #include <vector>
 
 using namespace std;
@@ -13,34 +12,89 @@ void Task2E::doTask()
     int n;
     cin >> n;
     int a, b;
-    map<int, map<int, int>> deltas;
+    vector<int> orderPositive;
+    orderPositive.reserve(n);
+    vector<int> orderNegative;
+    orderNegative.reserve(n);
+    int maxB;
+    int maxBIndex = -1;
+    bool firstPositive = true;
+    int maxA;
+    int maxAIndex = -1;
+    bool firstNegative = true;
+    vector<int> vectorA;
+    vector<int> vectorB;
+    vectorA.reserve(n);
+    vectorB.reserve(n);
     for(int i = 0; i < n; ++i) {
         cin >> a >> b;
+        vectorA.push_back(a);
+        vectorB.push_back(b);
         int delta = a - b;
-        if (delta < 0) {
-            delta = -1;
+        if (delta <= 0) {
+            if (firstNegative) {
+                firstNegative = false;
+                maxA = a;
+                maxAIndex = i;
+            } else {
+                if (maxA < a) {
+                    maxA = a;
+                    maxAIndex = i;
+                }
+            }
+            orderNegative.push_back(i);
+        } else {
+            if (firstPositive) {
+                firstPositive = false;
+                maxB = b;
+                maxBIndex = i;
+            } else {
+                if (maxB < b) {
+                    maxB = b;
+                    maxBIndex = i;
+                }
+            }
+            orderPositive.push_back(i);
         }
-        if (deltas.count(delta) == 0) {
-            deltas[delta] = map<int, int>();
-        }
-        deltas[delta][a] = i;
     }
+
     int64_t current = 0;
     int64_t maxValue = 0;
-    vector<int> order;
-    order.reserve(n);
-    for (auto it = deltas.rbegin(); it != deltas.rend(); ++it) {
-        const auto& indexes = it->second;
-        for (auto it2 = indexes.rbegin(); it2 != indexes.rend(); ++it2) {
-            if (maxValue < current + it2->first) {
-                maxValue = current + it2->first;
+
+    if (orderPositive.size() > 0) {
+        for (auto index : orderPositive) {
+            if (index == maxBIndex) continue;
+            if (maxValue < current + vectorA[index]) {
+                maxValue = current + vectorA[index];
             }
-            current += it->first;
-            order.push_back(it2->second);
+            current += vectorA[index] - vectorB[index];
         }
+
+        if (maxValue < current + vectorA[maxBIndex]) {
+            maxValue = current + vectorA[maxBIndex];
+        }
+        current += vectorA[maxBIndex] - vectorB[maxBIndex];
     }
-    cout << maxValue << endl;
-    for(int ind : order) {
-        cout << (ind + 1) << " ";
+
+    if (maxValue < current + vectorA[maxAIndex]) {
+        maxValue = current + vectorA[maxAIndex];
+    }
+
+    cout << maxValue << "\n";
+    if (orderPositive.size() > 0) {
+        for (auto index : orderPositive) {
+            if (index == maxBIndex) continue;
+            cout << (index + 1) << " ";
+        }
+        cout << (maxBIndex + 1) << " ";
+    }
+
+
+    if (orderNegative.size() > 0) {
+        cout << (maxAIndex + 1) << " ";
+        for (auto index : orderNegative) {
+            if (index == maxAIndex) continue;
+            cout << (index + 1) << " ";
+        }
     }
 }
