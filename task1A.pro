@@ -3,18 +3,23 @@ CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
 
-SOURCES += \
-        main.cpp \
-        task1a.cpp \
-        task1b.cpp \
-        task1c.cpp \
-        task1d.cpp \
-        task1e.cpp \
-        task1f.cpp \
-        task1g.cpp \
-        task1h.cpp \
-        task1i.cpp \
-        task1j.cpp
+
+SOURCES += main.cpp \
+    task1a.cpp \
+    task1b.cpp \
+    task1c.cpp \
+    task1d.cpp \
+    task1e.cpp \
+    task1f.cpp \
+    task1g.cpp \
+    task1h.cpp \
+    task1i.cpp \
+    task1j.cpp \
+    task2a.cpp \
+    task2b.cpp
+
+DISTFILES += \
+    tests.txt
 
 HEADERS += \
     task1a.h \
@@ -26,7 +31,7 @@ HEADERS += \
     task1g.h \
     task1h.h \
     task1i.h \
-    task1j.h
+    task1j.h \
+    task2a.h \
+    task2b.h
 
-DISTFILES += \
-    tests.txt

@@ -7,12 +7,12 @@
 // #include "task1g.h"
 //#include "task1h.h"
 //#include "task1i.h"
-#include "task1j.h"
+// #include "task1j.h"
+// #include "task2a.h"
+#include "task2b.h"
 
 int main()
 {
-    // test();
-
 //    Task1A task1a;
 //    task1a.doTask();
 
@@ -44,9 +44,14 @@ int main()
 //    task1i.test();
 //    task1i.doTask();
 
-    Task1J task1j;
-    task1j.test();
+    // Task1J task1j;
+    // task1j.test();
     // task1j.doTask();
+
+    // Task2A task2a;
+    // task2a.doTask();
+    Task2B task2b;
+    task2b.doTask();
 
     return 0;
 }
