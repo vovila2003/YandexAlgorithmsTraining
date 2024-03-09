@@ -68,7 +68,7 @@ void Task2H::doTask()
     int maxValueWithoutRowColumn;
     tie(maxValueWithoutRowColumn, i, j) = findMax(forces, row1, column1);
 
-    //strategy Row->Column
+    //strategy Column->Row
     int maxValueWithoutColumn;
     int column2 = jMaxForce;
     tie(maxValueWithoutColumn, i, j) = findMax(forces, -1, column2);
