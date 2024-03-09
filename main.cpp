@@ -13,7 +13,8 @@
 //#include "task2c.h"
 // #include "task2d.h"
 // #include "task2e.h"
-#include "task2f.h"
+// #include "task2f.h"
+#include "task2g.h"
 
 int main()
 {
@@ -64,8 +65,11 @@ int main()
     // Task2E task2e;
     // task2e.doTask();
 
-    Task2F task2f;
-    task2f.doTask();
+    // Task2F task2f;
+    // task2f.doTask();
+
+    Task2G task2g;
+    task2g.doTask();
 
     return 0;
 }
