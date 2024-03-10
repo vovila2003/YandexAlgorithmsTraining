@@ -16,7 +16,8 @@
 // #include "task2f.h"
 // #include "task2g.h"
 // #include "task2h.h"
-#include "task2i.h"
+// #include "task2i.h"
+#include "task2j.h"
 
 int main()
 {
@@ -76,9 +77,12 @@ int main()
     // Task2H task2h;
     // task2h.doTask();
 
-    Task2I task2i;
-    task2i.runTests();
+    // Task2I task2i;
+    // task2i.runTests();
     // task2i.doTask();
+
+    Task2J task2j;
+    task2j.doTask();
 
     return 0;
 }
