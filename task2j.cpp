@@ -4,6 +4,7 @@
 #include <map>
 #include <tuple>
 #include <vector>
+#include <set>
 
 using namespace std;
 
@@ -13,6 +14,12 @@ struct Point {
     int x;
     int y;
 
+    bool operator<(const Point& other) const {
+        if (x != other.x) {
+            return x < other.x;
+        }
+        return y < other.y;
+    }
 };
 
 ostream& operator<<(ostream& stream, const Point point) {
@@ -85,6 +92,15 @@ pair<bool, Point> Task2J::findPoint(const vector<vector<char> > &field)
     }
     Point point {i, j};
     return make_pair(find, point);
+}
+
+set<Point> Task2J::makeFigure(Point start)
+{
+    set<Point> result;
+
+
+
+    return result;
 }
 
 Rect Task2J::makeRect(Point start, const vector<vector<char> > &field)

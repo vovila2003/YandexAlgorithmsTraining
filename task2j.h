@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 struct Rect;
 struct Point;
@@ -15,6 +16,7 @@ public:
 
 private:
     std::pair<bool, Point> findPoint(const std::vector<std::vector<char>>& field);
+    std::set<Point> makeFigure(Point start);
     Rect makeRect(Point start, const std::vector<std::vector<char>>& field);
     void refreshMaps(Point point, std::map<int, std::vector<int>>& xToYMap,
                      std::map<int, std::vector<int>>& yToXMap);
