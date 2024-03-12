@@ -23,20 +23,10 @@ private:
     void decorateField(const std::set<Point> &figure, char c, std::vector<std::vector<char> > &field);
     void printRect(const Rect& rect, std::ostream &stream);
     void printField(const std::vector<std::vector<char>>& field, std::ostream &stream);
-    std::pair<bool, std::vector<Rect>> trySplit(const std::set<Point>& figure);
-    bool isRect(const std::set<Point>& figure);
+    std::pair<bool, Rect> trySplitFigure(const std::set<Point>& figure);
     void test1();
-    Rect makeRect(Point start, const std::set<Point> &figure);
-    void refreshMaps(Point point, std::map<int, std::vector<int> > &xToYMap,
-                     std::map<int, std::vector<int> > &yToXMap);
-    bool canToRight(int y, const std::map<int, std::vector<int> > &yToXMap,
-                    const std::set<Point> &figure);
-    bool canToDown(int x, const std::map<int, std::vector<int> > &xToYMap,
-                   const std::set<Point> &figure);
-    void moveToRight(int y, std::map<int, std::vector<int> > &xToYMap,
-                     std::map<int, std::vector<int> > &yToXMap, Rect &rect);
-    void moveToDown(int x, std::map<int, std::vector<int> > &xToYMap,
-                    std::map<int, std::vector<int> > &yToXMap, Rect &rect);
+    std::pair<bool, Rect> toRect(const std::set<Point> &figure);
+    std::pair<bool, Rect> trySplitFigureTo2Rect(const std::set<Point>& figure);
 };
 
 #endif // TASK2J_H
