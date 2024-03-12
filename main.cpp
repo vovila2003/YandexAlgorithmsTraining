@@ -82,7 +82,8 @@ int main()
     // task2i.doTask();
 
     Task2J task2j;
-    task2j.doTask();
+    // task2j.doTask();
+    task2j.runTests();
 
     return 0;
 }
