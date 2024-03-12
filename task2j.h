@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <set>
-#include <map>
+#include <istream>
 
 struct Rect;
 struct Point;
