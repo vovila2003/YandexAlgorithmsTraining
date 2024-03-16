@@ -59,9 +59,7 @@ void Task2J::calculate(istream &istream, ostream &ostream)
         }
     }
 
-    bool ok;
-    Point start;
-    tie(ok, start) = findPoint(field);
+    auto [ok, start] = findPoint(field);
     if (!ok) {
         ostream << "NO";
         return;
