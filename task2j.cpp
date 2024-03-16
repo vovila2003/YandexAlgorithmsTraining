@@ -12,11 +12,11 @@ using namespace std;
 
 Task2J::Task2J() {}
 
-struct Point {
+struct Vector2 {
     int x;
     int y;
 
-    bool operator<(const Point& other) const {
+    bool operator<(const Vector2& other) const {
         if (x != other.x) {
             return x < other.x;
         }
@@ -24,15 +24,15 @@ struct Point {
     }
 };
 
-ostream& operator<<(ostream& stream, const Point point) {
+ostream& operator<<(ostream& stream, const Vector2 point) {
     stream << "(" << point.x << ", " << point.y << ")";
     return stream;
 }
 
 struct Rect {
-    vector<Point> points;
-    Point start;
-    Point finish;
+    vector<Vector2> points;
+    Vector2 start;
+    Vector2 finish;
 };
 
 
@@ -64,7 +64,7 @@ void Task2J::calculate(istream &istream, ostream &ostream)
         ostream << "NO";
         return;
     }
-    set<Point> figure1 = makeFigure(start, field);
+    set<Vector2> figure1 = makeFigure(start, field);
     decorateField(figure1, 'b', field);
     tie(ok, start) = findPoint(field);
     if (!ok) {
@@ -76,7 +76,7 @@ void Task2J::calculate(istream &istream, ostream &ostream)
         }
         decorateField(rect, 'a', field);
     } else {
-        set<Point> figure2 = makeFigure(start, field);
+        set<Vector2> figure2 = makeFigure(start, field);
         Rect rect1, rect2;
         tie(ok, rect1) = toRect(figure1);
         if (ok) {
@@ -98,7 +98,7 @@ void Task2J::calculate(istream &istream, ostream &ostream)
     printField(field, ostream);
 }
 
-pair<bool, Point> Task2J::findPoint(const vector<vector<char> > &field)
+pair<bool, Vector2> Task2J::findPoint(const vector<vector<char> > &field)
 {
     int i, j;
     bool find = false;
@@ -113,24 +113,24 @@ pair<bool, Point> Task2J::findPoint(const vector<vector<char> > &field)
             break;
         }
     }
-    Point point {i, j};
+    Vector2 point {i, j};
     return make_pair(find, point);
 }
 
-set<Point> Task2J::makeFigure(Point start, const std::vector<std::vector<char>>& field)
+set<Vector2> Task2J::makeFigure(Vector2 start, const std::vector<std::vector<char>>& field)
 {
-    set<Point> result;
-    queue<Point> inProgress;
+    set<Vector2> result;
+    queue<Vector2> inProgress;
     inProgress.push(start);
     vector<int> dx {0, 1, 0, -1};
     vector<int> dy {1, 0, -1, 0};
     result.insert(start);
 
     while(!inProgress.empty()) {
-        Point currentPoint = inProgress.front();
+        Vector2 currentPoint = inProgress.front();
         inProgress.pop();
         for (size_t k = 0; k < dx.size(); ++k) {
-            Point newPoint {currentPoint.x + dx[k], currentPoint.y + dy[k]};
+            Vector2 newPoint {currentPoint.x + dx[k], currentPoint.y + dy[k]};
             if (field[newPoint.x][newPoint.y] == '#' && result.count(newPoint) == 0) {
                 result.insert(newPoint);
                 inProgress.push(newPoint);
@@ -145,12 +145,12 @@ set<Point> Task2J::makeFigure(Point start, const std::vector<std::vector<char>>&
 void Task2J::decorateField(const Rect &rect, char c, vector<vector<char> > &field)
 {
     for (size_t i = 0; i < rect.points.size(); ++i) {
-        Point point = rect.points.at(i);
+        Vector2 point = rect.points.at(i);
         field[point.x][point.y] = c;
     }
 }
 
-void Task2J::decorateField(const set<Point> &figure, char c, vector<vector<char> > &field)
+void Task2J::decorateField(const set<Vector2> &figure, char c, vector<vector<char> > &field)
 {
     for (auto it = figure.begin(); it != figure.end(); ++it) {
         field[it->x][it->y] = c;
@@ -172,7 +172,7 @@ void Task2J::printField(const std::vector<std::vector<char> > &field, ostream& s
     }
 }
 
-pair<bool, Rect> Task2J::trySplitFigure(const set<Point>& figure)
+pair<bool, Rect> Task2J::trySplitFigure(const set<Vector2>& figure)
 {
     bool ok;
     Rect rect;
@@ -185,14 +185,14 @@ pair<bool, Rect> Task2J::trySplitFigure(const set<Point>& figure)
         if (rect.start.x == rect.finish.x || rect.start.y == rect.finish.y) {
             newRect.start = rect.start;
             newRect.finish = rect.start;
-            newRect.points.push_back(Point{rect.start.x, rect.start.y});
+            newRect.points.push_back(Vector2{rect.start.x, rect.start.y});
             return make_pair(true, std::move(newRect));
         }
-        newRect.start = Point {rect.start.x,rect.start.y};
-        newRect.finish = Point {rect.start.x,rect.finish.y};
+        newRect.start = Vector2 {rect.start.x,rect.start.y};
+        newRect.finish = Vector2 {rect.start.x,rect.finish.y};
 
         for (int y = rect.start.y; y <= rect.finish.y; ++y) {
-            Point point {rect.start.x, y};
+            Vector2 point {rect.start.x, y};
             newRect.points.push_back(point);
         }
         return make_pair(true, std::move(newRect));
@@ -200,7 +200,7 @@ pair<bool, Rect> Task2J::trySplitFigure(const set<Point>& figure)
     return trySplitFigureTo2Rect(figure);
 }
 
-pair<bool, Rect> Task2J::toRect(const set<Point> &figure)
+pair<bool, Rect> Task2J::toRect(const set<Vector2> &figure)
 {
     Rect rect;
     auto it = figure.begin();
@@ -213,30 +213,30 @@ pair<bool, Rect> Task2J::toRect(const set<Point> &figure)
         minY = min(minY, it->y);
         maxX = max(maxX, it->x);
         maxY = max(maxY, it->y);
-        rect.points.push_back(Point{*it});
+        rect.points.push_back(Vector2{*it});
     }
-    rect.start = Point{minX, minY};
-    rect.finish = Point{maxX, maxY};
+    rect.start = Vector2{minX, minY};
+    rect.finish = Vector2{maxX, maxY};
     bool isRect = (maxX - minX + 1) * (maxY - minY + 1) == (int)figure.size();
     return make_pair(isRect, std::move(rect));
 }
 
-pair<bool, Rect> Task2J::trySplitFigureTo2Rect(const set<Point>& figure) {
+pair<bool, Rect> Task2J::trySplitFigureTo2Rect(const set<Vector2>& figure) {
     map<int, vector<int>> xToYMap;
     map<int, vector<int>> yToXMap;
     for (auto it = figure.begin(); it != figure.end(); ++it) {
         xToYMap[it->x].push_back(it->y);
         yToXMap[it->y].push_back(it->x);
     }
-    set<Point> figure1;
-    set<Point> figure2(figure);
+    set<Vector2> figure1;
+    set<Vector2> figure2(figure);
 
     for (auto it = xToYMap.begin(); it != xToYMap.end(); ++it) {
         int x = it->first;
         auto& ys = it->second;
         for (size_t i = 0; i < ys.size(); ++i) {
             int y = ys.at(i);
-            Point point{x, y};
+            Vector2 point{x, y};
             figure1.insert(point);
             figure2.erase(point);
         }
@@ -261,7 +261,7 @@ pair<bool, Rect> Task2J::trySplitFigureTo2Rect(const set<Point>& figure) {
         auto& xs = it->second;
         for (size_t i = 0; i < xs.size(); ++i) {
             int x = xs.at(i);
-            Point point{x, y};
+            Vector2 point{x, y};
             figure1.insert(point);
             figure2.erase(point);
         }
