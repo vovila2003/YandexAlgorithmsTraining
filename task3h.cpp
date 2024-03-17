@@ -17,13 +17,27 @@ Task3H::Task3H()
 
 struct Vector2
 {
-    int x;
-    int y;
+    int x = 0;
+    int y = 0;
 
     Vector2(int x, int y) : x(x), y(y) {}
 
+    Vector2(const Vector2& other) : x(other.x), y(other.y) {}
+
+    Vector2() {}
+
+    Vector2& operator=(const Vector2& other) {
+        x = other.x;
+        y = other.y;
+        return *this;
+    }
+
     bool operator==(const Vector2 &other) const {
         return x == other.x && y == other.y;
+    }
+
+    bool operator!=(const Vector2 &other) const {
+        return !(*this == other);
     }
 
     bool operator<(const Vector2 other) const {
@@ -75,6 +89,28 @@ struct Segment {
             }
         }
     }
+
+    bool operator==(const Segment& other) const {
+        return vector == other.vector && startPoint == other.startPoint;
+    }
+
+    bool operator<(const Segment& other) const {
+        if (vector != other.vector) {
+            return vector < other.vector;
+        }
+        return startPoint < other.startPoint;
+    }
+};
+
+
+struct SegmentHash
+{
+    size_t operator()(const Segment& s) const noexcept
+    {
+        size_t h1 = Vector2Hash{}(s.vector);
+        size_t h2 = Vector2Hash{}(s.startPoint);
+        return h1 ^ (h2 << 1);
+    }
 };
 
 void Task3H::doTask()
@@ -107,61 +143,56 @@ void Task3H::doTask()
     set<Vector2> commonVectors;
     set_intersection(vectorsA.begin(), vectorsA.end(), vectorsB.begin(), vectorsB.end(),
                      inserter(commonVectors, commonVectors.begin()));
-    unordered_map<Vector2, unordered_map<Vector2, vector<Vector2>, Vector2Hash>, Vector2Hash> matrixA;
-    unordered_map<Vector2, unordered_map<Vector2, vector<Vector2>, Vector2Hash>, Vector2Hash> matrixB;
-    for (auto& v :commonVectors) {
-        matrixA[v][v] = vector<Vector2>();
-        matrixB[v][v] = vector<Vector2>();
+
+    unordered_map<Vector2, vector<Segment>, Vector2Hash> vectorsSegmentsA;
+    unordered_map<Vector2, vector<Segment>, Vector2Hash> vectorsSegmentsB;
+
+    for (size_t i = 0; i < segmentsA.size(); ++i) {
+        auto& segment = segmentsA.at(i);
+        if (commonVectors.count(segment.vector) == 0) {
+            continue;
+        }
+        vectorsSegmentsA[segment.vector].push_back(segment);
     }
-    for (size_t i = 0; i < segmentsA.size() - 1; ++i) {
-        for (size_t j = i + 1; j < segmentsA.size(); ++j) {
-            auto& segment1 = segmentsA.at(i);
-            auto& segment2 = segmentsA.at(j);
-            if (matrixA.count(segment1.vector) == 0 || matrixA.count(segment2.vector) == 0) {
-                continue;
+
+
+    for (size_t i = 0; i < segmentsB.size(); ++i) {
+        auto& segment = segmentsB.at(i);
+        if (commonVectors.count(segment.vector) == 0) {
+            continue;
+        }
+        vectorsSegmentsB[segment.vector].push_back(segment);
+    }
+
+    set<Segment> setA;
+    for (auto& [v, vec] : vectorsSegmentsA) {
+        for(auto& ss : vec) {
+            setA.insert(ss);
+        }
+    }
+    int maxCount = 0;
+    for (auto& [vec, segA] : vectorsSegmentsA) {
+        for (Segment& base : segA) {
+            for (Segment& other : vectorsSegmentsB[vec]) {
+
+                Vector2 shift = base.startPoint - other.startPoint;
+
+                set<Segment> setB;
+                for (auto& [v, vec] : vectorsSegmentsB) {
+                    for(auto ss : vec) {
+                        ss.startPoint = ss.startPoint + shift;
+                        setB.insert(ss);
+                    }
+                }
+
+                set<Segment> common;
+                set_intersection(setA.begin(), setA.end(), setB.begin(), setB.end(),
+                                 inserter(common, common.begin()));
+
+                int count = common.size();
+                maxCount = max(count, maxCount);
             }
-            Vector2 delta21 = segment2.startPoint - segment1.startPoint;
-            Vector2 delta12 = segment1.startPoint - segment2.startPoint;
-            matrixA[segment1.vector][segment2.vector].push_back(delta12);
-            matrixA[segment2.vector][segment1.vector].push_back(delta21);
         }
     }
-
-    for (size_t i = 0; i < segmentsB.size() - 1; ++i) {
-        for (size_t j = i + 1; j < segmentsB.size(); ++j) {
-            auto& segment1 = segmentsB.at(i);
-            auto& segment2 = segmentsB.at(j);
-            if (matrixB.count(segment1.vector) == 0 || matrixB.count(segment2.vector) == 0) {
-                continue;
-            }
-            Vector2 delta21 = segment2.startPoint - segment1.startPoint;
-            Vector2 delta12 = segment1.startPoint - segment2.startPoint;
-            matrixB[segment1.vector][segment2.vector].push_back(delta12);
-            matrixB[segment2.vector][segment1.vector].push_back(delta21);
-        }
-    }
-
-    int maxCount = -1;
-    for (auto& [key, mapA] : matrixA) {
-        auto& mapB = matrixB[key];
-        int count = 0;
-        for (auto& [key2, vecA] : mapA) {
-            vector<Vector2> common;
-            auto& vecB = mapB[key2];
-            sort(vecA.begin(), vecA.end());
-            sort(vecB.begin(), vecB.end());
-            set_intersection(vecA.begin(), vecA.end(), vecB.begin(), vecB.end(),
-                             back_inserter(common));
-            count += common.size();
-        }
-        maxCount = max(count, maxCount);
-    }
-
-    int result = 0;
-    if (maxCount == -1) {
-        result = n;
-    } else {
-        result = n - (maxCount + 1);
-    }
-    cout << endl << result << endl;
+    cout << n - maxCount;
 }
