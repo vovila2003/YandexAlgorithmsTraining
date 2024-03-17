@@ -1,10 +1,12 @@
 #include "task3h.h"
 
+#include <algorithm>
 #include <iostream>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <map>
+#include <set>
 
 using namespace std;
 
@@ -22,6 +24,13 @@ struct Vector2
 
     bool operator==(const Vector2 &other) const {
         return x == other.x && y == other.y;
+    }
+
+    bool operator<(const Vector2 other) const {
+        if (x != other.x) {
+            return x < other.x;
+        }
+        return y < other.y;
     }
 };
 
@@ -46,40 +55,25 @@ Vector2 operator+(const Vector2& left, const Vector2& right)
 }
 
 struct Segment {
-    Vector2 point1;
-    Vector2 point2;
+    Vector2 vector;
+    Vector2 startPoint;
 
-    Segment(Vector2 point1, Vector2 point2) : point1(point1), point2(point2) {}
-
-    int64_t sqrLength() {
-        Vector2 v = point2 - point1;
-        return int64_t(v.x) * int64_t(v.x) + int64_t(v.y) * int64_t(v.y);
-    }
-
-    int64_t key() {
-        int64_t tg = int64_t(1000000 * (double(point2.y) - double(point1.y)) / (double(point2.x) - double(point1.x)));
-        size_t h1 = hash<int64_t>{}(tg);
-        size_t h2 = hash<int64_t>{}(this->sqrLength());
-        return h1 ^ (h2 << 1);
-    }
-
-    bool operator==(const Segment& other) const {
-        return (point1 == other.point1 && point2 == other.point2) ||
-               (point2 == other.point1 && point1 == other.point2);
-    }
-};
-
-Segment operator+(const Segment& s, const Vector2& v) {
-    return Segment(s.point1 + v, s.point2 + v);
-}
-
-struct SegmentHash
-{
-    size_t operator()(const Segment& s) const noexcept
-    {
-        size_t h1 = Vector2Hash{}(s.point1);
-        size_t h2 = Vector2Hash{}(s.point2);
-        return h1 ^ (h2 << 1);
+    Segment(Vector2 point1, Vector2 point2) : vector(0,0), startPoint(0, 0) {
+        if (point1.x > point2.x) {
+            vector = point1 - point2;
+            startPoint = point2;
+        } else if (point1.x < point2.x) {
+            vector = point2 - point1;
+            startPoint = point1;
+        } else {
+            if (point1.y > point2.y) {
+                vector = point1 - point2;
+                startPoint = point2;
+            } else {
+                vector = point2 - point1;
+                startPoint = point1;
+            }
+        }
     }
 };
 
@@ -88,57 +82,86 @@ void Task3H::doTask()
     int n = 0;
     cin >> n;
     int x1, y1, x2, y2;
-    unordered_map<int64_t, vector<Segment>> segmentsA; // key ->Segments
-    unordered_map<int64_t, vector<Segment>> segmentsB;
+    set<Vector2> vectorsA;
+    vector<Segment> segmentsA;
+    segmentsA.reserve(n);
     for (int i = 0; i < n; ++i) {
         cin >> x1 >> y1 >> x2 >> y2;
         Vector2 point1(x1, y1);
         Vector2 point2(x2, y2);
         Segment segment(point1, point2);
-        auto key = segment.key();
-        segmentsA[key].push_back(segment);
+        segmentsA.push_back(segment);
+        vectorsA.insert(segment.vector);
     }
+    set<Vector2> vectorsB;
+    vector<Segment> segmentsB;
+    segmentsB.reserve(n);
     for (int i = 0; i < n; ++i) {
         cin >> x1 >> y1 >> x2 >> y2;
         Vector2 point1(x1, y1);
         Vector2 point2(x2, y2);
         Segment segment(point1, point2);
-        auto key = segment.key();
-        segmentsB[key].push_back(segment);
+        segmentsB.push_back(segment);
+        vectorsB.insert(segment.vector);
     }
-
-    vector<Vector2> vectors;
-    vectors.reserve(4 * n);
-    for (auto& [key, vecA] : segmentsA) {
-        if (segmentsB.count(key) == 0) {
-            continue;
-        }
-        for (auto& segmentA : vecA) {
-            for (auto& segmentB : segmentsB.at(key)) {
-                vectors.push_back(segmentB.point1 - segmentA.point1);
-                vectors.push_back(segmentB.point2 - segmentA.point1);
-                vectors.push_back(segmentB.point1 - segmentA.point2);
-                vectors.push_back(segmentB.point2 - segmentA.point2);
-            }
-        }
+    set<Vector2> commonVectors;
+    set_intersection(vectorsA.begin(), vectorsA.end(), vectorsB.begin(), vectorsB.end(),
+                     inserter(commonVectors, commonVectors.begin()));
+    unordered_map<Vector2, unordered_map<Vector2, vector<Vector2>, Vector2Hash>, Vector2Hash> matrixA;
+    unordered_map<Vector2, unordered_map<Vector2, vector<Vector2>, Vector2Hash>, Vector2Hash> matrixB;
+    for (auto& v :commonVectors) {
+        matrixA[v][v] = vector<Vector2>();
+        matrixB[v][v] = vector<Vector2>();
     }
-    int maxCount = 0;
-    for (auto& shift : vectors) {
-        int count = 0;
-        for (auto& [key, vecA] : segmentsA) {
-            if (segmentsB.count(key) == 0) {
+    for (size_t i = 0; i < segmentsA.size() - 1; ++i) {
+        for (size_t j = i + 1; j < segmentsA.size(); ++j) {
+            auto& segment1 = segmentsA.at(i);
+            auto& segment2 = segmentsA.at(j);
+            if (matrixA.count(segment1.vector) == 0 || matrixA.count(segment2.vector) == 0) {
                 continue;
             }
-            for (auto& segmentA : vecA) {
-                for (auto& segmentB : segmentsB.at(key)) {
-                    if (segmentA + shift == segmentB) {
-                        ++count;
-                    }
-                    maxCount = max(maxCount, count);
-                }
-            }
+            Vector2 delta21 = segment2.startPoint - segment1.startPoint;
+            Vector2 delta12 = segment1.startPoint - segment2.startPoint;
+            matrixA[segment1.vector][segment2.vector].push_back(delta12);
+            matrixA[segment2.vector][segment1.vector].push_back(delta21);
         }
     }
 
-    cout << (n - maxCount);
+    for (size_t i = 0; i < segmentsB.size() - 1; ++i) {
+        for (size_t j = i + 1; j < segmentsB.size(); ++j) {
+            auto& segment1 = segmentsB.at(i);
+            auto& segment2 = segmentsB.at(j);
+            if (matrixB.count(segment1.vector) == 0 || matrixB.count(segment2.vector) == 0) {
+                continue;
+            }
+            Vector2 delta21 = segment2.startPoint - segment1.startPoint;
+            Vector2 delta12 = segment1.startPoint - segment2.startPoint;
+            matrixB[segment1.vector][segment2.vector].push_back(delta12);
+            matrixB[segment2.vector][segment1.vector].push_back(delta21);
+        }
+    }
+
+    int maxCount = -1;
+    for (auto& [key, mapA] : matrixA) {
+        auto& mapB = matrixB[key];
+        int count = 0;
+        for (auto& [key2, vecA] : mapA) {
+            vector<Vector2> common;
+            auto& vecB = mapB[key2];
+            sort(vecA.begin(), vecA.end());
+            sort(vecB.begin(), vecB.end());
+            set_intersection(vecA.begin(), vecA.end(), vecB.begin(), vecB.end(),
+                             back_inserter(common));
+            count += common.size();
+        }
+        maxCount = max(count, maxCount);
+    }
+
+    int result = 0;
+    if (maxCount == -1) {
+        result = n;
+    } else {
+        result = n - (maxCount + 1);
+    }
+    cout << endl << result << endl;
 }
