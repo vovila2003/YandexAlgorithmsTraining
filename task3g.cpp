@@ -19,10 +19,6 @@ struct Vector2 {
     bool operator==(const Vector2& other) const {
         return x == other.x && y == other.y;
     }
-
-//    int64_t sqrDistance() {
-//        return int64_t(x) * x + y * y;
-//    }
 };
 
 Vector2 operator-(Vector2 lhv, Vector2 rhv) {
