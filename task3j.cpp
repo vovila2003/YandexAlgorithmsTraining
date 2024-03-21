@@ -17,10 +17,14 @@ Task3J::Task3J()
 
 class Device;
 
-namespace Net {
+namespace Net
+{
+
 const map<int, set<int>>& getRarestParts();
 const set<Device *> &getDevicesWithPart(int neededPart);
 void markDeviceIsCompleted(Device* device);
+void update(int part, Device* device);
+
 }
 
 class Device {
@@ -36,10 +40,11 @@ public:
         }
     }
 
-    void downloadPart(int i, Device* sender = nullptr) {
-        neededParts_.erase(i);
+    void downloadPart(int part, Device* sender = nullptr) {
+        neededParts_.erase(part);
         if (sender) {
             ++importments_[sender];
+            Net::update(part, this);
         }
         if (isCompleted()) {
             Net::markDeviceIsCompleted(this);
@@ -111,7 +116,7 @@ public:
         if (dict.empty()) {
             return;
         }
-        int deviceNumberToRequest = *(dict.begin()->second.begin());
+        int deviceNumberToRequest = *(dict.rbegin()->second.begin());
         Device* deviceToRequest = numberToDevice[deviceNumberToRequest];
         deviceToRequest->receiveRequest(mostNeededPart_, this);
     }
@@ -121,6 +126,9 @@ public:
     }
 
     void selectRequestToDo() {
+        if (requests_.empty()) {
+            return;
+        }
         map<size_t, vector<Device*>> valueToDevices;
         for (auto& [device, part] : requests_) {
             size_t value = importments_[device];
@@ -132,7 +140,7 @@ public:
             int neededPartsCount = device->neededParts().size();
             partsCountToDevices[neededPartsCount].push_back(device);
         }
-        vector<Device*>& devices = partsCountToDevices.begin()->second;
+        vector<Device*>& devices = partsCountToDevices.rbegin()->second;
         map<int, Device*> numberDevices;
         for(Device* device : devices) {
             numberDevices[device->number()] = device;
@@ -142,9 +150,6 @@ public:
     }
 
     void doWork() {
-
-        tick();
-
         if (!deviceToTransmit_) {
             return;
         }
@@ -154,6 +159,18 @@ public:
         assert(neededParts_.count(partToTransmit) == 0); //
 
         deviceToTransmit_->downloadPart(partToTransmit, this);
+        //cout << number_ << " -> " << deviceToTransmit_->number() << " part: " << partToTransmit << endl;
+    }
+
+    int timeslots() const {
+        return timeslots_;
+    }
+
+    void tick() {
+        if (isCompleted()) {
+            return;
+        }
+        ++timeslots_;
     }
 
 private:
@@ -164,15 +181,6 @@ private:
     Device* deviceToTransmit_;
     unordered_map<Device*, int> requests_;
     unordered_map<Device*, size_t> importments_;
-
-private:
-    void tick() {
-        if (isCompleted()) {
-            return;
-        }
-        ++timeslots_;
-    }
-
 };
 
 namespace Net {
@@ -184,6 +192,7 @@ namespace {
     map<int, set<Device*>> updates_; // parts -> set<Devices>
     map<int, set<int>> partsCounts_; // deviceCounts -> set<parts>
     set<Device*> devicesForDownloads_;
+    map<int, Device*> numberToDevice_;
 
     void updateRarestPart() {
         partsCounts_.clear();
@@ -206,6 +215,7 @@ namespace {
         devices.reserve(devices_.size());
         for (size_t i = 0; i < devices_.size(); ++i) {
             devices.push_back(devices_.at(i).get());
+            numberToDevice_[devices_.at(i)->number()] = devices_.at(i).get();
         }
         for (size_t i = 0; i < devices.size(); ++i) {
             devices[i]->setupDevice(devices);
@@ -213,6 +223,10 @@ namespace {
                 devicesForDownloads_.insert(devices[i]);
             }
         }
+    }
+
+    void update(int part, Device* device) {
+        updates_[part].insert(device);
     }
 
     void markDeviceIsCompleted(Device* device) {
@@ -223,8 +237,13 @@ namespace {
         return devicesForDownloads_.empty();
     }
 
-    void setUpdatePartCount(int count) {
+    void resetNet(int count) {
         partCount_ = count;
+        devices_.clear();
+        updates_.clear();
+        partsCounts_.clear();
+        devicesForDownloads_.clear();
+        numberToDevice_.clear();
     }
 
     void addDevice(unique_ptr<Device> device) {
@@ -252,6 +271,10 @@ namespace {
         }
 
         for (auto& device : devices_) {
+            device->tick();
+        }
+
+        for (auto& device : devices_) {
             device->doWork();
         }
 
@@ -265,14 +288,14 @@ namespace {
         return updates_.at(neededPart);
     }
 
-    const vector<unique_ptr<Device>>& devices() {
-        return devices_;
+    const map<int, Device*>& devices() {
+        return numberToDevice_;
     }
 
 };
 
 void createNet(int n, int k) {
-    Net::setUpdatePartCount(k);
+    Net::resetNet(k);
     auto device1 = make_unique<Device>(1, k);
     for (int i = 1; i <= k; ++i) {
         device1->downloadPart(i);
@@ -290,9 +313,19 @@ void Task3J::doTask()
     int n, k;
     cin >> n >> k;
     createNet(n, k);
+    //int time = 0;
     while(!Net::isCompleded()) {
+        // ++time;
+       // cout << "---- " << time << " ------" << endl;
         Net::doTimeSlot();
+        //cout << endl;
     }
-    const vector<unique_ptr<Device>>& devices = Net::devices();
-    // for ([])
+    const map<int, Device*>& devices = Net::devices();
+    for (auto [number, device] : devices) {
+        if (number == 1) {
+            continue;
+        }
+        //cout << "number: " << number << ";  ticks: " << device->timeslots() << endl;
+        cout << device->timeslots() << " ";
+    }
 }
