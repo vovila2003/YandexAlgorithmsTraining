@@ -110,34 +110,29 @@ struct Segment {
     }
 };
 
-
-struct SegmentHash
-{
-    size_t operator()(const Segment& s) const noexcept
-    {
-        size_t h1 = Vector2Hash{}(s.startPoint);
-        size_t h2 = Vector2Hash{}(s.vector);
-        return h1 ^ (h2 << 1);
-    }
-};
-
 struct SegmentsDiff {
     Vector2 vector1;
     Vector2 vector2;
 
     SegmentsDiff(Segment segment1, Segment segment2) {
-        vector1 = segment2.startPoint - segment1.startPoint;
-        vector2 = segment2.startPoint + segment2.vector - (segment1.startPoint + segment1.vector);
+        Vector2 vec1 = segment2.startPoint - segment1.startPoint;
+        Vector2 vec2 = segment2.startPoint + segment2.vector - (segment1.startPoint + segment1.vector);
+        if (vec1.x < vec2.x) {
+            vector1 = vec1;
+            vector2 = vec2;
+        } else if (vec1.x > vec2.x) {
+            vector1 = vec2;
+            vector2 = vec1;
+        } else if (vec1.y < vec2.y) {
+            vector1 = vec1;
+            vector2 = vec2;
+        } else {
+            vector1 = vec2;
+            vector2 = vec1;
+        }
     }
 
-    Vector2 sum() const {
-        Vector2 result = Vector2(0, 0);
-        result = result + vector1;
-        result = result + vector2;
-        return result;
-    }
-
-    SegmentsDiff(const SegmentsDiff& other) : vector1 (other.vector1), vector2(other.vector2){}
+    SegmentsDiff(const SegmentsDiff& other) : vector1 (other.vector1), vector2 (other.vector2) {}
 
     SegmentsDiff& operator=(const SegmentsDiff& other) {
         vector1 = other.vector1;
@@ -146,7 +141,32 @@ struct SegmentsDiff {
     }
 
     bool operator<(const SegmentsDiff& other) const {
-        return sum() < other.sum();
+        if (vector1 == other.vector1) {
+            return vector2 < other.vector2;
+        }
+        return vector1 < other.vector1;
+    }
+
+    bool operator== (const SegmentsDiff& other) const {
+        return vector1 == other.vector1 && vector2 == other.vector2;
+    }
+};
+
+struct SegmentsDiffHash
+{
+    size_t operator()(const SegmentsDiff& s) const noexcept
+    {
+        size_t hash = s.vector1.x;
+        hash *= 37;
+        hash += s.vector1.y;
+        hash *= 37;
+        hash += s.vector2.x;
+        hash *= 37;
+        hash += s.vector2.y;
+        return hash;
+//        size_t h1 = Vector2Hash{}(s.vector1);
+//        size_t h2 = Vector2Hash{}(s.vector2);
+//        return h1 ^ (h2 << 1);
     }
 };
 
@@ -164,15 +184,15 @@ vector<Segment> readSegments(int n) {
     return segments;
 }
 
- map<Segment, vector<SegmentsDiff>> makeDeltas(const vector<Segment>& segments) {
-     map<Segment, vector<SegmentsDiff>> delta;
+map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> makeDeltas(const vector<Segment>& segments) {
+    map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> delta;
     for (size_t i = 0; i < segments.size(); ++i) {
         auto& segment1 = segments[i];
         for (size_t j = 0; j < segments.size(); ++j) {
             if (i == j) continue;
             auto& segment2 = segments[j];
             SegmentsDiff diff = SegmentsDiff(segment1, segment2);
-            delta[segment1].push_back(std::move(diff));
+            delta[segment1].insert(std::move(diff));
         }
     }
     return delta;
@@ -187,26 +207,11 @@ vector<Segment> readSegments(int n) {
      return result;
  }
 
-set<Vector2> makeVectorsSet(const vector<Segment>& segments) {
-     set<Vector2> result;
-     for (size_t i = 0; i < segments.size(); ++i) {
-         Vector2 vec = segments[i].vector;
-         result.insert(std::move(vec));
-     }
-     return result;
-}
-
-int intersect(const vector<SegmentsDiff>& set1, const vector<SegmentsDiff>& set2) {
-    map<SegmentsDiff, int> common;
-    for (auto& diff: set1) {
-        ++common[diff];
-    }
-    for (auto& diff: set2) {
-        ++common[diff];
-    }
+int intersect(const unordered_multiset<SegmentsDiff, SegmentsDiffHash>& set1,
+              const unordered_multiset<SegmentsDiff, SegmentsDiffHash>& set2) {
     int result = 0;
-    for (auto& [diff, c] : common) {
-        if (c == 2) {
+    for (auto& seg1 : set1) {
+        if (set2.count(seg1) != 0) {
             ++result;
         }
     }
@@ -219,35 +224,25 @@ void Task3H::doTask()
     cin >> n;
 
     vector<Segment> segmentsA = readSegments(n);
-    map<Segment, vector<SegmentsDiff>> deltaA = makeDeltas(segmentsA);
-    map<Vector2, vector<Segment>> vectorToSegmentA = makeVectorToSegment(segmentsA);
-    set<Vector2> vectorSetA = makeVectorsSet(segmentsA);
+    map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> deltaA = makeDeltas(segmentsA);
 
     vector<Segment> segmentsB = readSegments(n);
-    map<Segment, vector<SegmentsDiff>> deltaB = makeDeltas(segmentsB);
+    map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> deltaB = makeDeltas(segmentsB);
     map<Vector2, vector<Segment>> vectorToSegmentB = makeVectorToSegment(segmentsB);
-    set<Vector2> vectorSetB = makeVectorsSet(segmentsB);
 
-    set<Vector2> commonVectors;
-    set_intersection(vectorSetA.begin(), vectorSetA.end(), vectorSetB.begin(), vectorSetB.end(), inserter(commonVectors, commonVectors.end()));
-
-    if (commonVectors.empty()) {
-        cout << 0;
-        return;
-    }
+    cout << "READY" << endl;
 
     int maxCount = 0;
-    for (auto& commonVector : commonVectors) {
-        for (auto& segmentA : vectorToSegmentA[commonVector]) {
-            for (auto& segmentB : vectorToSegmentB[commonVector]) {
-                auto& setA = deltaA[segmentA];
-                auto& setB = deltaB[segmentB];
-                int count = intersect(setA, setB);
-                cout << count << endl;
-                maxCount = max(maxCount, count);
-            }
+    bool found = false;
+    for (Segment& segmentA : segmentsA) {
+        for (auto& segmentB : vectorToSegmentB[segmentA.vector]) {
+            found = true;
+            auto& setA = deltaA[segmentA];
+            auto& setB = deltaB[segmentB];
+            int count = intersect(setA, setB);
+            maxCount = max(maxCount, count);
         }
     }
-
-    cout << endl << (n - maxCount) << endl;
+    int result = found ? (n - maxCount - 1) : n - maxCount;
+    cout << endl << result << endl;
 }
