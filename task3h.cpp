@@ -1,6 +1,7 @@
 #include "task3h.h"
 
 #include <iostream>
+#include <unordered_set>
 #include <vector>
 #include <unordered_map>
 #include <set>
@@ -13,7 +14,7 @@ Task3H::Task3H()
 
 }
 
-
+using namespace std;
 
 const int Q = 73;
 
@@ -54,10 +55,10 @@ struct Vector2Hash
 {
     size_t operator()(const Vector2& p) const noexcept
     {
-        size_t hash = p.x;
-        hash *= Q;
-        hash += p.y;
-        return hash;
+        size_t h = hash<int>{}(p.x);
+        h *= Q;
+        h += hash<int>{}(p.y);
+        return h;
     }
 };
 
@@ -93,13 +94,13 @@ struct Segment {
                 startPoint = point1;
             }
         }
-        size_t h = startPoint.x;
+        size_t h = std::hash<int>{}(startPoint.x);
         h *= Q;
-        h += startPoint.y;
+        h += std::hash<int>{}(startPoint.y);
         h *= Q;
-        h += vector.x;
+        h += std::hash<int>{}(vector.x);
         h *= Q;
-        h += vector.y;
+        h += std::hash<int>{}(vector.y);
         hash = h;
     }
 
@@ -124,18 +125,20 @@ struct Segment {
 struct SegmentsDiff {
     Vector2 vector1;
     Vector2 vector2;
+
     size_t hash;
 
     SegmentsDiff(Segment segment1, Segment segment2) {
         vector1 = segment2.startPoint - segment1.startPoint;
         vector2 = segment2.startPoint + segment2.vector - (segment1.startPoint + segment1.vector);
-        size_t h = vector1.x;
+
+        size_t h = std::hash<int>{}(vector1.x);
         h *= Q;
-        h += vector1.y;
+        h += std::hash<int>{}(vector1.y);
         h *= Q;
-        h += vector2.x;
+        h += std::hash<int>{}(vector2.x);
         h *= Q;
-        h += vector2.y;
+        h += std::hash<int>{}(vector2.y);
         hash = h;
     }
 
@@ -148,12 +151,8 @@ struct SegmentsDiff {
         return *this;
     }
 
-    bool operator<(const SegmentsDiff& other) const {
-        return hash < other.hash;
-    }
-
     bool operator== (const SegmentsDiff& other) const {
-        return hash == other.hash;
+        return vector1 == other.vector1 && vector2 == other.vector2;
     }
 };
 
@@ -225,6 +224,7 @@ int main1()
     cout << result;
     return 0;
 }
+
 
 void Task3H::doTask()
 {
