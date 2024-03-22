@@ -164,9 +164,6 @@ struct SegmentsDiffHash
         hash *= 37;
         hash += s.vector2.y;
         return hash;
-//        size_t h1 = Vector2Hash{}(s.vector1);
-//        size_t h2 = Vector2Hash{}(s.vector2);
-//        return h1 ^ (h2 << 1);
     }
 };
 
@@ -184,15 +181,16 @@ vector<Segment> readSegments(int n) {
     return segments;
 }
 
-map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> makeDeltas(const vector<Segment>& segments) {
-    map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> delta;
+map<Segment, unordered_multiset<size_t>> makeDeltas(const vector<Segment>& segments) {
+    map<Segment, unordered_multiset<size_t>> delta;
     for (size_t i = 0; i < segments.size(); ++i) {
         auto& segment1 = segments[i];
         for (size_t j = 0; j < segments.size(); ++j) {
             if (i == j) continue;
             auto& segment2 = segments[j];
             SegmentsDiff diff = SegmentsDiff(segment1, segment2);
-            delta[segment1].insert(std::move(diff));
+            size_t hash = SegmentsDiffHash{}(diff);
+            delta[segment1].insert(hash);
         }
     }
     return delta;
@@ -207,8 +205,8 @@ map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> makeDeltas(cons
      return result;
  }
 
-int intersect(const unordered_multiset<SegmentsDiff, SegmentsDiffHash>& set1,
-              const unordered_multiset<SegmentsDiff, SegmentsDiffHash>& set2) {
+int intersect(const unordered_multiset<size_t>& set1,
+              const unordered_multiset<size_t>& set2) {
     int result = 0;
     for (auto& seg1 : set1) {
         if (set2.count(seg1) != 0) {
@@ -224,13 +222,11 @@ void Task3H::doTask()
     cin >> n;
 
     vector<Segment> segmentsA = readSegments(n);
-    map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> deltaA = makeDeltas(segmentsA);
+    map<Segment, unordered_multiset<size_t>> deltaA = makeDeltas(segmentsA);
 
     vector<Segment> segmentsB = readSegments(n);
-    map<Segment, unordered_multiset<SegmentsDiff, SegmentsDiffHash>> deltaB = makeDeltas(segmentsB);
+    map<Segment, unordered_multiset<size_t>> deltaB = makeDeltas(segmentsB);
     map<Vector2, vector<Segment>> vectorToSegmentB = makeVectorToSegment(segmentsB);
-
-    cout << "READY" << endl;
 
     int maxCount = 0;
     bool found = false;
