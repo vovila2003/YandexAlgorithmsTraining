@@ -1,8 +1,8 @@
-#include "task3h.h"
+#include "task4a.h"
 
 int main()
 {
-    Task3H task;
+    Task4A task;
     task.doTask();
 
     return 0;
