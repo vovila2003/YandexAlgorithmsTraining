@@ -64,37 +64,32 @@ int readData(istream& in, vector<int>& words, vector<u_int64_t>& presum, int n) 
     return maxA;
 }
 
-pair<bool, int> targetFun(const vector<u_int64_t>& presum1, const vector<u_int64_t>& presum2, int w, int width) {
-    int lines1 = getLines(presum1, w);
-    if (lines1 == -1) {
-        return make_pair(false, 0);
-    }
-    int lines2 = getLines(presum2, width - w);
-    if (lines2 == -1) {
-        return make_pair(false, 0);
-    }
-    return make_pair(true, abs(lines1 - lines2));
-}
-
-bool checkTargetFun(const vector<u_int64_t>& presum1, const vector<u_int64_t>& presum2, int w, int width) {
-    auto value1 = targetFun(presum1, presum2, w, width);
-    if (!value1.first) {
-        return false;
-    }
-    auto value2 = targetFun(presum1, presum2, w + 1, width);
-    if (!value2.first) {
-        return false;
-    }
-    return value2.second < value1.second;
-}
-
 int binarySearch(const vector<u_int64_t>& presum1, const vector<u_int64_t>& presum2, int width, int minWidth, int maxWidth) {
     int l = minWidth;
     int r = maxWidth;
     while (l < r) {
+        if (r - l == 1) {
+            int l1 = getLines(presum1, l);
+            int l2 = getLines(presum2, width - l);
+            int resL = max(l1, l2);
+            l1 = getLines(presum1, r);
+            l2 = getLines(presum2, width - r);
+            int resR = max(l1, l2);
+            if (resL <= resR) {
+                return l;
+            } else {
+                return r;
+            }
+        }
+
         int m = (l + r) / 2;
-        if (checkTargetFun(presum1, presum2, m, width)) {
-            l = m + 1;
+        int l1 = getLines(presum1, m);
+        int l2 = getLines(presum2, width - m);
+        if (l1 == l2) {
+            return m;
+        }
+        if (l1 > l2) {
+            l = m;
         } else {
             r = m;
         }
@@ -150,6 +145,14 @@ void test2() {
     test(sin, answer, "test2");
 }
 
+void test9() {
+    stringstream sin("1000 1000 1\n"
+                     "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1\n"
+                     "438\n");
+    int answer = 4;
+    test(sin, answer, "test9");
+}
+
 void test11() {
     stringstream sin("1000 1 1000\n"
                      "744\n"
@@ -170,6 +173,7 @@ void test16() {
 void tests() {
     test1();
     test2();
+    test9();
     test11();
     test16();
 }
