@@ -8,17 +8,17 @@ using namespace std;
 
 Task4D::Task4D() {}
 
-bool check(int m, const vector<u_int64_t>& vec, int width, int start) {
+bool check(int m, const vector<u_int64_t>& vec, u_int64_t width, u_int64_t start) {
     u_int64_t symbolsInWords = vec[m] - vec[start];
-    int spaces = m - start - 1;
-    int resultSymbols = symbolsInWords + spaces;
+    u_int64_t spaces = m - start - 1;
+    u_int64_t resultSymbols = symbolsInWords + spaces;
     return resultSymbols <= width;
 }
 
-int binarySearchLines(int l, int r, const vector<u_int64_t>& vec, int width) {
-    int start = l;
+u_int64_t binarySearchLines(u_int64_t l, u_int64_t r, const vector<u_int64_t>& vec, u_int64_t width) {
+    u_int64_t start = l;
     while (l < r) {
-        int m = (l + r + 1) / 2;
+        u_int64_t m = (l + r + 1) / 2;
         if (check(m, vec, width, start)) {
             l = m;
         } else {
@@ -28,15 +28,20 @@ int binarySearchLines(int l, int r, const vector<u_int64_t>& vec, int width) {
     return l;
 }
 
-int getLines(const vector<u_int64_t>& presum, int width) {
-    int result = 0;
-    int currentIndex = 0;
+u_int64_t getLines(const vector<u_int64_t>& presum, int width) {
+    u_int64_t result = 0;
+    u_int64_t currentIndex = 0;
     while(true) {
         int nextIndex = binarySearchLines(currentIndex, presum.size() - 1, presum, width);
         if (nextIndex == currentIndex) {
             return -1;
         }
-        if (presum[nextIndex] - presum[currentIndex] + nextIndex - currentIndex - 1 <= width) {
+        auto sumR = presum[nextIndex];
+        auto sumL = presum[currentIndex];
+        auto symbols = sumR - sumL;
+        auto spaces = nextIndex - currentIndex - 1;
+        auto resultSymbols = symbols + spaces;
+        if (resultSymbols <= width) {
             ++result;
             currentIndex = nextIndex;
         }
@@ -47,8 +52,7 @@ int getLines(const vector<u_int64_t>& presum, int width) {
     return result;
 }
 
-int readData(istream& in, vector<int>& words, vector<u_int64_t>& presum, int n) {
-    words.reserve(n);
+u_int64_t readData(istream& in, vector<u_int64_t>& presum, int n) {
     presum.reserve(n + 1);
     presum.push_back(0);
     int a = 0;
@@ -58,62 +62,58 @@ int readData(istream& in, vector<int>& words, vector<u_int64_t>& presum, int n) 
         in >> a;
         sum += a;
         maxA = max(a, maxA);
-        words.push_back(a);
         presum.push_back(sum);
     }
     return maxA;
 }
 
-int binarySearch(const vector<u_int64_t>& presum1, const vector<u_int64_t>& presum2, int width, int minWidth, int maxWidth) {
-    int l = minWidth;
-    int r = maxWidth;
+u_int64_t binarySearch(const vector<u_int64_t>& presum1, const vector<u_int64_t>& presum2,
+                 u_int64_t width, u_int64_t minWidth, u_int64_t maxWidth) {
+    u_int64_t l = minWidth;
+    u_int64_t r = maxWidth;
+    u_int64_t l1 = getLines(presum1, l);
+    u_int64_t l2 = getLines(presum2, width - r);
     while (l < r) {
         if (r - l == 1) {
-            int l1 = getLines(presum1, l);
-            int l2 = getLines(presum2, width - l);
-            int resL = max(l1, l2);
+            l1 = getLines(presum1, l);
+            l2 = getLines(presum2, width - l);
+            u_int64_t resL = max(l1, l2);
             l1 = getLines(presum1, r);
             l2 = getLines(presum2, width - r);
-            int resR = max(l1, l2);
+            u_int64_t resR = max(l1, l2);
             if (resL <= resR) {
-                return l;
-            } else {
-                return r;
+                return resL;
             }
+            return resR;
         }
 
-        int m = (l + r) / 2;
-        int l1 = getLines(presum1, m);
-        int l2 = getLines(presum2, width - m);
-        if (l1 == l2) {
-            return m;
-        }
+        u_int64_t m = (l + r) / 2;
+        l1 = getLines(presum1, m);
+        l2 = getLines(presum2, width - m);
         if (l1 > l2) {
             l = m;
         } else {
             r = m;
         }
     }
-    return l;
+    return max(l1, l2);
 }
 
 void calculate(istream& in, ostream& out) {
+
     int w = 0;
     int n = 0;
     int m = 0;
     in >> w >> n >> m;
-    vector<int> words1;
     vector<u_int64_t> presum1;
-    int minWidth1 = readData(in, words1, presum1, n);
-    vector<int> words2;
+    presum1.reserve(n);
+    u_int64_t minWidth1 = readData(in, presum1, n);
     vector<u_int64_t> presum2;
-    int minWidth2 = readData(in, words2, presum2, m);
-    int maxWidth = w - minWidth2;
-    int result = binarySearch(presum1, presum2, w, minWidth1, maxWidth);
-    auto line1 = getLines(presum1, result);
-    auto line2 = getLines(presum2, w - result);
-    //cout << result << " " << line1 << " " << line2 << endl;
-    out << max(line1, line2);
+    presum2.reserve(m);
+    u_int64_t minWidth2 = readData(in, presum2, m);
+    u_int64_t maxWidth = w - minWidth2;
+    u_int64_t result = binarySearch(presum1, presum2, w, minWidth1, maxWidth);
+    out << result;
 }
 
 void test(istream& in, int answer, const string& name) {
@@ -168,7 +168,6 @@ void test16() {
     int answer = 4;
     test(sin, answer, "test16");
 }
-
 
 void tests() {
     test1();
