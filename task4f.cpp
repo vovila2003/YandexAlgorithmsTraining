@@ -130,43 +130,95 @@ struct Point {
     }
 };
 
-u_int64_t sqrDistance(Point p1, Point p2) {
-    return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
+u_int64_t sqrDistance(Point&& p1, Point& p2) {
+    return (u_int64_t(p1.x) - p2.x) * (u_int64_t(p1.x) - p2.x) +
+            (u_int64_t(p1.y) - p2.y) * (u_int64_t(p1.y) - p2.y);
+//    return (p1.x - p2.x) * (p1.x - p2.x) +
+//            (p1.y - p2.y) * (p1.y - p2.y);
 }
 
-bool check(int width, const Point& p, Point& h1, Point& h2, Point& v1, Point& v2) {
-    int horizP1P2 = abs(h1.y - h2.y) + 1;
-    bool inHoriz = width >= horizP1P2;
-    inHoriz &= max(abs(p.y - h1.y), abs(p.y - h2.y)) + 1 <= width;
+bool check(int width, const Point& p, Point& h1, Point& h2, Point& v1, Point& v2,
+           vector<vector<int>>& minMax, int index) {
+    int minH = min(min(h1.y, h2.y), p.y);
+//    if (minMax[index][0] > minH) {
+//        minMax[index][0] = minH;
+//    }
+    int maxH = max(max(h1.y, h2.y), p.y);
+//    if (minMax[index][1] < maxH) {
+//        minMax[index][1] = maxH;
+//    }
+    bool inHoriz = maxH - minH + 1 <= width;
 
-    int verticP3P4 = abs(v1.x - v2.x) + 1;
-    bool inVert = width >= verticP3P4;
-    inVert &= max(abs(p.x - v1.x), abs(p.x - v2.x)) + 1 <= width;
+    int minV = min(min(v1.x, v2.x), p.x);
+//    if (minMax[index][2] > minV) {
+//        minMax[index][2] = minV;
+//    }
+    int maxV = max(max(v1.x, v2.x), p.x);
+//    if (minMax[index][3] < maxV) {
+//        minMax[index][3] = maxV;
+//    }
+    bool inVert = maxV - minV + 1 <= width;
+
+
 
     return inHoriz || inVert;
+}
+
+void fillMinMax(vector<vector<int>>& minMax, Point& c1, Point& c2, Point& c3, Point& c4) {
+    minMax[0][0] = min(c1.y, c2.y);
+    minMax[0][1] = max(c1.y, c2.y);
+    minMax[0][2] = min(c3.x, c4.x);
+    minMax[0][3] = max(c3.x, c4.x);
+
+    minMax[1][0] = min(c3.y, c4.y);
+    minMax[1][1] = max(c3.y, c4.y);
+    minMax[1][2] = min(c1.x, c2.x);
+    minMax[1][3] = max(c1.x, c2.x);
+
+    minMax[2][0] = min(c1.y, c3.y);
+    minMax[2][1] = max(c1.y, c3.y);
+    minMax[2][2] = min(c2.x, c4.x);
+    minMax[2][3] = max(c2.x, c4.x);
+
+    minMax[3][0] = min(c2.y, c4.y);
+    minMax[3][1] = max(c2.y, c4.y);
+    minMax[3][2] = min(c1.x, c3.x);
+    minMax[3][3] = max(c1.x, c3.x);
+
+    minMax[4][0] = min(c1.y, c4.y);
+    minMax[4][1] = max(c1.y, c4.y);
+    minMax[4][2] = min(c2.x, c3.x);
+    minMax[4][3] = max(c2.x, c3.x);
+
+    minMax[5][0] = min(c2.y, c3.y);
+    minMax[5][1] = max(c2.y, c3.y);
+    minMax[5][2] = min(c1.x, c4.x);
+    minMax[5][3] = max(c1.x, c4.x);
 }
 
 bool checkWidth(int width, const vector<Point>& plates,
                 Point& c1, Point& c2, Point& c3, Point& c4) {
     vector<bool> results(6, true);
+    vector<vector<int>> minMax = vector<vector<int>>(6, vector<int>(4, 0));
+    fillMinMax(minMax, c1, c2, c3, c4);
     for (auto& p : plates) {
         if (results[0]) {
-            results[0] = results[0] && check(width, p, c1, c2, c3, c4);
+            results[0] = results[0] && check(width, p, c1, c2, c3, c4, minMax, 0);
         }
         if (results[1]) {
-            results[1] = results[1] && check(width, p, c3, c4, c1, c2);
+            results[1] = results[1] && check(width, p, c3, c4, c1, c2, minMax, 1);
         }
         if (results[2]) {
-            results[2] = results[2] && check(width, p, c1, c3, c2, c4);
+            results[2] = results[2] && check(width, p, c1, c3, c2, c4, minMax, 2);
         }
         if (results[3]) {
-            results[3] = results[3] && check(width, p, c2, c4, c1, c3);
+            results[3] = results[3] && check(width, p, c2, c4, c1, c3, minMax, 3);
         }
         if (results[4]) {
-            results[4] = results[4] && check(width, p, c1, c4, c2, c3);
+            results[4] = results[4] && check(width, p, c1, c4, c2, c3, minMax, 4);
         }
         if (results[5]) {
-            results[5] = results[5] && check(width, p, c2, c3, c1, c4);
+            results[5] = results[5] && check(width, p, c2, c3, c1, c4, minMax, 5);
         }
         bool a = false;
         for (auto r :results) {
@@ -218,40 +270,40 @@ int main()
             c4 = p;
             first = false;
         } else {
-//            if (p.x < c1.x) {
+//            if (p.x < c1.x || (p.x == c1.x && p.y < c1.y)) {
 //                c1 = p;
 //            }
-//            if (p.y > c2.y) {
+//            if (p.y > c2.y || (p.y == c2.y && p.x < c2.x)) {
 //                c2 = p;
 //            }
-//            if (p.x > c3.x) {
+//            if (p.x > c3.x || (p.x == c3.x && p.y < c3.y)) {
 //                c3 = p;
 //            }
-//            if (p.y < c4.y) {
+//            if (p.y < c4.y || (p.y == c4.y && p.x > c4.x)) {
 //                c4 = p;
 //            }
-//            if (sqrDistance(Point(1, 1), p) < sqrDistance(Point(1, 1), c1)) {
-//                c1 = p;
-//            }
-//            if (sqrDistance(Point(1, h), p) < sqrDistance(Point(1, h), c2)) {
-//                c2 = p;
-//            }
-//            if (sqrDistance(Point(w, 1), p) < sqrDistance(Point(w, 1), c3)) {
-//                c3 = p;
-//            }
-//            if (sqrDistance(Point(w, h), p) < sqrDistance(Point(w, h), c4)) {
-//                c4 = p;
-//            }
+            if (sqrDistance(Point(1, 1), p) < sqrDistance(Point(1, 1), c1)) {
+                c1 = p;
+            }
+            if (sqrDistance(Point(1, h), p) < sqrDistance(Point(1, h), c2)) {
+                c2 = p;
+            }
+            if (sqrDistance(Point(w, 1), p) < sqrDistance(Point(w, 1), c3)) {
+                c3 = p;
+            }
+            if (sqrDistance(Point(w, h), p) < sqrDistance(Point(w, h), c4)) {
+                c4 = p;
+            }
         }
     }
 
-    //int result = getWidth(c1, c2, c3, c4);
 
     auto result= calculate(1, min(w, h), plates, c1, c2, c3, c4);
 
     cout << result;
     return 0;
 }
+
 
 
 */
