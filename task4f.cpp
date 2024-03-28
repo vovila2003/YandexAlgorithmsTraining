@@ -113,7 +113,6 @@ void Task4F::doTask()
 
 /*
 #include <iostream>
-#include <set>
 #include <vector>
 
 using namespace std;
@@ -132,94 +131,111 @@ struct Point {
 
 u_int64_t sqrDistance(Point&& p1, Point& p2) {
     return (u_int64_t(p1.x) - p2.x) * (u_int64_t(p1.x) - p2.x) +
-            (u_int64_t(p1.y) - p2.y) * (u_int64_t(p1.y) - p2.y);
-//    return (p1.x - p2.x) * (p1.x - p2.x) +
-//            (p1.y - p2.y) * (p1.y - p2.y);
+           (u_int64_t(p1.y) - p2.y) * (u_int64_t(p1.y) - p2.y);
 }
 
-bool check(int width, const Point& p, Point& h1, Point& h2, Point& v1, Point& v2,
-           vector<vector<int>>& minMax, int index) {
-    int minH = min(min(h1.y, h2.y), p.y);
-//    if (minMax[index][0] > minH) {
-//        minMax[index][0] = minH;
-//    }
-    int maxH = max(max(h1.y, h2.y), p.y);
-//    if (minMax[index][1] < maxH) {
-//        minMax[index][1] = maxH;
-//    }
-    bool inHoriz = maxH - minH + 1 <= width;
+pair<bool, bool> checkHoriz(int width, const Point& p, const Point& h1, const Point& h2,
+           const vector<Point>& sides) {
+    int baseHorizWidth = abs(h1.y - h2.y) + 1;
+    if (baseHorizWidth > width) {
+        return make_pair(false, false);
+    }
 
-    int minV = min(min(v1.x, v2.x), p.x);
-//    if (minMax[index][2] > minV) {
-//        minMax[index][2] = minV;
-//    }
-    int maxV = max(max(v1.x, v2.x), p.x);
-//    if (minMax[index][3] < maxV) {
-//        minMax[index][3] = maxV;
-//    }
-    bool inVert = maxV - minV + 1 <= width;
+    int dist1 = abs(p.y - sides[1].y) + 1;
+    bool res1 = dist1 <= width;
 
+    int dist2 = abs(p.y - sides[2].y) + 1;
+    bool res2 = dist2 <= width;
 
-
-    return inHoriz || inVert;
+    return make_pair(res1, res2);
 }
 
-void fillMinMax(vector<vector<int>>& minMax, Point& c1, Point& c2, Point& c3, Point& c4) {
-    minMax[0][0] = min(c1.y, c2.y);
-    minMax[0][1] = max(c1.y, c2.y);
-    minMax[0][2] = min(c3.x, c4.x);
-    minMax[0][3] = max(c3.x, c4.x);
+pair<bool, bool> checkVert(int width, const Point& p, const Point& v1, const Point& v2,
+                           const vector<Point>& sides) {
+    int baseVertWidth = abs(v1.x - v2.x) + 1;
+    if (baseVertWidth > width) {
+        return make_pair(false, false);
+    }
 
-    minMax[1][0] = min(c3.y, c4.y);
-    minMax[1][1] = max(c3.y, c4.y);
-    minMax[1][2] = min(c1.x, c2.x);
-    minMax[1][3] = max(c1.x, c2.x);
+    int dist1 = abs(p.x - sides[0].x) + 1;
+    bool res1 = dist1 <= width;
 
-    minMax[2][0] = min(c1.y, c3.y);
-    minMax[2][1] = max(c1.y, c3.y);
-    minMax[2][2] = min(c2.x, c4.x);
-    minMax[2][3] = max(c2.x, c4.x);
+    int dist2 = abs(p.x - sides[3].x) + 1;
+    bool res2 = dist2 <= width;
 
-    minMax[3][0] = min(c2.y, c4.y);
-    minMax[3][1] = max(c2.y, c4.y);
-    minMax[3][2] = min(c1.x, c3.x);
-    minMax[3][3] = max(c1.x, c3.x);
-
-    minMax[4][0] = min(c1.y, c4.y);
-    minMax[4][1] = max(c1.y, c4.y);
-    minMax[4][2] = min(c2.x, c3.x);
-    minMax[4][3] = max(c2.x, c3.x);
-
-    minMax[5][0] = min(c2.y, c3.y);
-    minMax[5][1] = max(c2.y, c3.y);
-    minMax[5][2] = min(c1.x, c4.x);
-    minMax[5][3] = max(c1.x, c4.x);
+    return make_pair(res1, res2);
 }
 
 bool checkWidth(int width, const vector<Point>& plates,
-                Point& c1, Point& c2, Point& c3, Point& c4) {
-    vector<bool> results(6, true);
-    vector<vector<int>> minMax = vector<vector<int>>(6, vector<int>(4, 0));
-    fillMinMax(minMax, c1, c2, c3, c4);
+                const vector<Point>& coners, const vector<Point>& sides) {
+    vector<bool> results(24, true);
     for (auto& p : plates) {
-        if (results[0]) {
-            results[0] = results[0] && check(width, p, c1, c2, c3, c4, minMax, 0);
+        if (results[0] || results[1]) {
+            auto resHoriz = checkHoriz(width, p, coners[0], coners[1], sides);
+            results[0] = results[0] && resHoriz.first;
+            results[1] = results[0] && resHoriz.second;
         }
-        if (results[1]) {
-            results[1] = results[1] && check(width, p, c3, c4, c1, c2, minMax, 1);
+        if (results[2] || results[3]) {
+            auto resVert = checkVert(width, p, coners[2], coners[3], sides);
+            results[2] = results[2] && resVert.first;
+            results[3] = results[3] && resVert.second;
         }
-        if (results[2]) {
-            results[2] = results[2] && check(width, p, c1, c3, c2, c4, minMax, 2);
+
+        if (results[4] || results[5]) {
+            auto resHoriz = checkHoriz(width, p, coners[2], coners[3], sides);
+            results[4] = results[4] && resHoriz.first;
+            results[5] = results[5] && resHoriz.second;
         }
-        if (results[3]) {
-            results[3] = results[3] && check(width, p, c2, c4, c1, c3, minMax, 3);
+        if (results[6] || results[7]) {
+            auto resVert = checkVert(width, p, coners[0], coners[1], sides);
+            results[6] = results[6] && resVert.first;
+            results[7] = results[7] && resVert.second;
         }
-        if (results[4]) {
-            results[4] = results[4] && check(width, p, c1, c4, c2, c3, minMax, 4);
+
+        if (results[8] || results[9]) {
+            auto resHoriz = checkHoriz(width, p, coners[0], coners[2], sides);
+            results[8] = results[8] && resHoriz.first;
+            results[9] = results[9] && resHoriz.second;
         }
-        if (results[5]) {
-            results[5] = results[5] && check(width, p, c2, c3, c1, c4, minMax, 5);
+        if (results[10] || results[11]) {
+            auto resVert = checkVert(width, p, coners[1], coners[3], sides);
+            results[10] = results[10] && resVert.first;
+            results[11] = results[11] && resVert.second;
         }
+
+        if (results[12] || results[13]) {
+            auto resHoriz = checkHoriz(width, p, coners[1], coners[3], sides);
+            results[12] = results[12] && resHoriz.first;
+            results[13] = results[13] && resHoriz.second;
+        }
+        if (results[14] || results[15]) {
+            auto resVert = checkVert(width, p, coners[0], coners[2], sides);
+            results[14] = results[14] && resVert.first;
+            results[15] = results[15] && resVert.second;
+        }
+
+        if (results[16] || results[17]) {
+            auto resHoriz = checkHoriz(width, p, coners[0], coners[3], sides);
+            results[16] = results[16] && resHoriz.first;
+            results[17] = results[17] && resHoriz.second;
+        }
+        if (results[18] || results[19]) {
+            auto resVert = checkVert(width, p, coners[1], coners[2], sides);
+            results[18] = results[18] && resVert.first;
+            results[19] = results[19] && resVert.second;
+        }
+
+        if (results[20] || results[21]) {
+            auto resHoriz = checkHoriz(width, p, coners[1], coners[2], sides);
+            results[20] = results[20] && resHoriz.first;
+            results[21] = results[21] && resHoriz.second;
+        }
+        if (results[22] || results[23]) {
+            auto resVert = checkVert(width, p, coners[0], coners[3], sides);
+            results[22] = results[22] && resVert.first;
+            results[23] = results[23] && resVert.second;
+        }
+
         bool a = false;
         for (auto r :results) {
             a = a || r;
@@ -232,10 +248,10 @@ bool checkWidth(int width, const vector<Point>& plates,
 }
 
 int calculate(int l, int r, const vector<Point>& plates,
-              Point& c1, Point& c2, Point& c3, Point& c4) {
+              const vector<Point>& coners, const vector<Point>& sides) {
     while (l < r) {
         u_int64_t m = (u_int64_t(l) + r) / 2;
-        if (checkWidth(m, plates, c1, c2, c3, c4)) {
+        if (checkWidth(m, plates, coners, sides)) {
             r = m;
         } else {
             l = m + 1;
@@ -252,10 +268,8 @@ int main()
     cin >> w >> h >> n;
     int x = 0;
     int y = 0;
-    Point c1(0,0);
-    Point c2(0,0);
-    Point c3(0,0);
-    Point c4(0,0);
+    vector<Point> coners = vector<Point>(4, Point(0,0));
+    vector<Point> sides = vector<Point>(4, Point(0,0));
     bool first = true;
     vector<Point> plates;
     plates.reserve(n);
@@ -264,45 +278,48 @@ int main()
         Point p(x,y);
         plates.push_back(p);
         if (first) {
-            c1 = p;
-            c2 = p;
-            c3 = p;
-            c4 = p;
+            for (int i = 0; i < 4; ++i) {
+                coners[i] = p;
+                sides[i] = p;
+            }
             first = false;
         } else {
-//            if (p.x < c1.x || (p.x == c1.x && p.y < c1.y)) {
-//                c1 = p;
-//            }
-//            if (p.y > c2.y || (p.y == c2.y && p.x < c2.x)) {
-//                c2 = p;
-//            }
-//            if (p.x > c3.x || (p.x == c3.x && p.y < c3.y)) {
-//                c3 = p;
-//            }
-//            if (p.y < c4.y || (p.y == c4.y && p.x > c4.x)) {
-//                c4 = p;
-//            }
-            if (sqrDistance(Point(1, 1), p) < sqrDistance(Point(1, 1), c1)) {
-                c1 = p;
+            if (p.x < sides[0].x) {
+                sides[0] = p;
             }
-            if (sqrDistance(Point(1, h), p) < sqrDistance(Point(1, h), c2)) {
-                c2 = p;
+            if (p.y < sides[1].y) {
+                sides[1] = p;
             }
-            if (sqrDistance(Point(w, 1), p) < sqrDistance(Point(w, 1), c3)) {
-                c3 = p;
+            if (p.y > sides[2].y) {
+                sides[2] = p;
             }
-            if (sqrDistance(Point(w, h), p) < sqrDistance(Point(w, h), c4)) {
-                c4 = p;
+            if (p.x > sides[3].x) {
+                sides[3] = p;
             }
+            if (sqrDistance(Point(1, 1), p) < sqrDistance(Point(1, 1), coners[0])) {
+                coners[0] = p;
+            }
+            if (sqrDistance(Point(1, h), p) < sqrDistance(Point(1, h), coners[1])) {
+                coners[1] = p;
+            }
+            if (sqrDistance(Point(w, 1), p) < sqrDistance(Point(w, 1), coners[2])) {
+                coners[2] = p;
+            }
+            if (sqrDistance(Point(w, h), p) < sqrDistance(Point(w, h), coners[3])) {
+                coners[3] = p;
+            }
+
+
         }
     }
 
 
-    auto result= calculate(1, min(w, h), plates, c1, c2, c3, c4);
+    auto result= calculate(1, min(w, h), plates, coners, sides);
 
     cout << result;
     return 0;
 }
+
 
 
 
